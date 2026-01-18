@@ -53,10 +53,12 @@ export class GoogleAuthService {
    * Получает URL для начала Google OAuth процесса
    */
   public getGoogleLoginUrl(): string {
-    // В проде бэкенд сам управляет redirect_uri (GOOGLE_LOGIN_REDIRECT_URI)
-    // В локале пробрасываем redirect_uri на фронт, чтобы замкнуть цикл
+    // Формируем URL для фронтенд-коллбэка
+    const frontendCallbackUrl = `${window.location.origin}/auth/google/callback`;
     const base = `${this.currentBaseUrl}${API_ENDPOINTS.auth.google.login}`;
-    return base;
+    
+    // Добавляем redirect_uri в качестве параметра, чтобы бэкенд знал, куда Google должен вернуть пользователя
+    return `${base}?redirect_uri=${encodeURIComponent(frontendCallbackUrl)}`;
   }
 
   /**
@@ -106,11 +108,17 @@ export class GoogleAuthService {
       console.log('🔄 Обрабатываем Google OAuth callback...');
       
       const callbackUrl = this.getGoogleCallbackUrl();
+      const frontendCallbackUrl = `${window.location.origin}/auth/google/callback`;
+      
       const params = new URLSearchParams();
       params.append('code', code);
       if (state) {
         params.append('state', state);
       }
+      // Сообщаем бэкенду, какой redirect_uri был использован на фронтенде
+      params.append('redirect_uri', frontendCallbackUrl);
+      // Явно запрашиваем JSON ответ
+      params.append('json', '1');
 
       const response = await fetch(`${callbackUrl}?${params.toString()}`, {
         method: 'GET',

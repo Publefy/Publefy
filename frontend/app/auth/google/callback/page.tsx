@@ -64,6 +64,9 @@ export default function GoogleCallbackPage() {
         const res = await googleAuthService.handleGoogleCallback(params.code, params.state);
         if (res.success && res.token) {
           googleAuthService.saveToken(res.token);
+          if (res.user) {
+            localStorage.setItem('user', JSON.stringify(res.user));
+          }
           googleAuthService.clearOAuthParams();
           window.location.replace('/');
           return;

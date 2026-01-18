@@ -263,7 +263,7 @@ def instagram_callback():
         if not added_profiles:
             return jsonify({"error": "No Instagram business accounts found on any pages."}), 400
 
-        return redirect("https://publefy.com")
+        return redirect("https://publefy.vercel.app")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

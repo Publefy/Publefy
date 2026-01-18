@@ -3,7 +3,7 @@ import axios, { CreateAxiosDefaults } from "axios";
 
 /** Normalize base URL (strip trailing slashes) */
 const DEFAULT_CLOUD_RUN_BASE =
-  "https://publefy-339761699392.europe-west1.run.app";
+  "https://publefy-1020068343725.us-central1.run.app";
 
 const extractHostname = (value?: string) => {
   if (!value) return "";

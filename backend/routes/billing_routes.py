@@ -37,8 +37,8 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='subscription',
-            success_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com/profile") + "?success=true",
-            cancel_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com/profile") + "?canceled=true",
+            success_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.vercel.app/profile") + "?success=true",
+            cancel_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.vercel.app/profile") + "?canceled=true",
             client_reference_id=str(user["_id"]),
             customer_email=user["email"],
             metadata={
@@ -68,7 +68,7 @@ def create_portal_session():
         session = stripe.billing_portal.Session.create(
             customer=stripe_customer_id,
             configuration=os.getenv("STRIPE_PORTAL_CONFIG_ID"),
-            return_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com/profile"),
+            return_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.vercel.app/profile"),
         )
         return jsonify({"url": session.url})
     except Exception as e:

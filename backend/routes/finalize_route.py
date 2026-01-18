@@ -65,7 +65,7 @@ def _canonical_host() -> str:
         (getattr(request, "host_url", "") or "").strip(),
         (os.getenv("CLOUD_RUN_HOST") or "").strip(),
         (os.getenv("HOST_NAME") or "").strip(),
-        "https://publefy-339761699392.europe-west1.run.app",
+        "https://publefy-1020068343725.us-central1.run.app",
     ]
     for c in candidates:
         if not c:

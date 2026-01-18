@@ -137,6 +137,12 @@ def instagram_login():
     if not all([FB_APP_ID, REDIRECT_URI]):
         return jsonify({"error": "Missing required environment variables"}), 500
 
+    # #region agent log
+    with open(r'c:\Users\nikit\publefy\.cursor\debug.log', 'a') as f:
+        import json, time
+        f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'C', 'location': 'instagram_route.py:140', 'message': 'IG Login Params', 'data': {'client_id': FB_APP_ID, 'redirect_uri': REDIRECT_URI}, 'timestamp': int(time.time() * 1000)}) + '\n')
+    # #endregion
+
     token = request.args.get("state")  # JWT from frontend
     if not token:
         return jsonify({"error": "Missing auth token in state param"}), 400

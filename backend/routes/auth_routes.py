@@ -412,6 +412,12 @@ def facebook_login():
 
     state = _set_state()
 
+    # #region agent log
+    with open(r'c:\Users\nikit\publefy\.cursor\debug.log', 'a') as f:
+        import json, time
+        f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'auth_routes.py:413', 'message': 'FB Login Params', 'data': {'client_id': FB_APP_ID_Client, 'redirect_uri': chosen_redirect_uri, 'GRAPH_API_URL': GRAPH_API_URL}, 'timestamp': int(time.time() * 1000)}) + '\n')
+    # #endregion
+
     # Remember where to send the user back in YOUR app after callback
     return_to = request.args.get("redirect_uri") or APP_WEB_REDIRECT_URI
     session["fb_return_to"] = return_to

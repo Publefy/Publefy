@@ -14,10 +14,10 @@ from datetime import datetime, timezone
 
 # Facebook
 # Support both legacy and common env var names
-FB_APP_ID_Client = "25266816979636362"
-FB_APP_SECRET_Client = "bfc276034da82f0f60ac7112163d809a"
+FB_APP_ID_Client = "684530967977171"
+FB_APP_SECRET_Client = "7fc8257eaf48699be4b2866b896e7697"
 FB_LOGIN_REDIRECT_URI = os.getenv("FB_LOGIN_REDIRECT_URI")
-GRAPH_API_URL = "https://graph.facebook.com/v21.0"
+GRAPH_API_URL = "https://graph.facebook.com/v23.0"
 
 # Google
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -411,17 +411,6 @@ def facebook_login():
         raise BadRequest("Facebook OAuth is not configured")
 
     state = _set_state()
-
-    # #region agent log
-    print(f"DEBUG: FB Login Params: client_id={FB_APP_ID_Client}, redirect_uri={chosen_redirect_uri}, GRAPH_API_URL={GRAPH_API_URL}")
-    try:
-        import json, time, os as py_os
-        log_path = 'debug.log'
-        with open(log_path, 'a') as f:
-            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'auth_routes.py:413', 'message': 'FB Login Params', 'data': {'client_id': FB_APP_ID_Client, 'redirect_uri': chosen_redirect_uri, 'GRAPH_API_URL': GRAPH_API_URL}, 'timestamp': int(time.time() * 1000)}) + '\n')
-    except Exception:
-        pass
-    # #endregion
 
     # Remember where to send the user back in YOUR app after callback
     return_to = request.args.get("redirect_uri") or APP_WEB_REDIRECT_URI

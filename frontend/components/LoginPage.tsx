@@ -628,6 +628,22 @@ export default function LoginPage({ onLogin }: { onLogin?: () => void }) {
                 </button>
               </div>
 
+              {/* Social sign-in buttons */}
+              <div className="mt-8 pt-8 border-t border-[#E7E5F7]">
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleGoogle}
+                    disabled={isLoading}
+                    className="flex items-center justify-center gap-4 h-12 w-full max-w-[400px] rounded-full bg-white hover:bg-slate-50 text-[#2A2550] font-semibold text-base border border-[#E7E5F7] shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-6"
+                    aria-label="Sign in with Google"
+                  >
+                    <GoogleIcon className="h-5 w-5" />
+                    <span className="text-[15px] font-semibold">Sign in with Google</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
           </motion.div>
         </AnimatePresence>

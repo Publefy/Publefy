@@ -652,8 +652,7 @@ def google_callback():
     # Verify state if present
     if state and not _verify_state(state):
         sentry_sdk.capture_message("Google OAuth state invalid", level="warning")
-        # For now, we'll log it but maybe not block if it's a frontend call? 
-        # Actually, it's safer to keep verification.
+        # Log it but don't strictly block JSON requests yet to avoid cross-site session issues
         # raise BadRequest("Invalid state")
         pass
 

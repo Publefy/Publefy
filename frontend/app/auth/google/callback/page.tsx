@@ -62,17 +62,25 @@ export default function GoogleCallbackPage() {
       }
       try {
         const res = await googleAuthService.handleGoogleCallback(params.code, params.state);
-        if (res.success && res.token) {
-          googleAuthService.saveToken(res.token);
+        const token = res.access_token || res.token;
+        
+        if (token) {
+          // Set cookie exactly like LoginPage.tsx
+          document.cookie = `userToken=${token}; Path=/; Max-Age=604800; Secure; SameSite=Strict`;
+          
+          googleAuthService.saveToken(token);
           if (res.user) {
             localStorage.setItem('user', JSON.stringify(res.user));
           }
           googleAuthService.clearOAuthParams();
+          
+          // Use location replace for a clean landing
           window.location.replace('/');
           return;
         }
         setError(res.message || 'Не удалось завершить аутентификацию');
       } catch (e: any) {
+        console.error('Callback error:', e);
         setError(e?.message || 'Ошибка при обработке колбэка');
       }
     };

@@ -16,8 +16,8 @@ export interface GoogleAuthResponse {
 }
 
 export interface GoogleCallbackResponse {
-  success: boolean;
-  message: string;
+  success?: boolean; // Keep for backward compatibility if any
+  message?: string;
   user?: {
     id: string;
     email: string;
@@ -25,6 +25,7 @@ export interface GoogleCallbackResponse {
     picture?: string;
   };
   token?: string;
+  access_token?: string; // New: matches backend payload
 }
 
 export class GoogleAuthService {
@@ -125,6 +126,7 @@ export class GoogleAuthService {
         headers: {
           'Accept': 'application/json',
         },
+        credentials: 'include', // Important: send session cookie for state verification
       });
 
       if (!response.ok) {

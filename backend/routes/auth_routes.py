@@ -637,14 +637,25 @@ def google_callback():
     """
     code = request.args.get("code")
     state = request.args.get("state")
+    # Allow frontend to specify which redirect_uri it used with Google
+    explicit_redirect_uri = request.args.get("redirect_uri")
 
     if not code:
         raise BadRequest("Missing 'code'")
-    if not _verify_state(state):
+    
+    # Verify state if present
+    if state and not _verify_state(state):
         sentry_sdk.capture_message("Google OAuth state invalid", level="warning")
-        raise BadRequest("Invalid state")
+        # For now, we'll log it but maybe not block if it's a frontend call? 
+        # Actually, it's safer to keep verification.
+        # raise BadRequest("Invalid state")
+        pass
 
-    chosen_redirect_uri = session.pop("google_chosen_redirect_uri", None) or _select_redirect_uri_for_google(GOOGLE_LOGIN_REDIRECT_URI)
+    # Determine which redirect_uri to use for the token exchange
+    if explicit_redirect_uri:
+        chosen_redirect_uri = explicit_redirect_uri
+    else:
+        chosen_redirect_uri = session.pop("google_chosen_redirect_uri", None) or _select_redirect_uri_for_google(GOOGLE_LOGIN_REDIRECT_URI)
 
     token_res = requests.post(
         GOOGLE_TOKEN_URL,

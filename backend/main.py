@@ -50,6 +50,7 @@ def create_app():
             "http://127.0.0.1:3000",
             "https://publefy.com",
             "https://www.publefy.com",
+            "https://publefy.vercel.app",
             "https://v0-publefy-kzc5ljvpd-artifex-97bd4d3c.vercel.app/"
         ],
         expose_headers=["*"],

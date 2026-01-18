@@ -155,21 +155,6 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function FacebookIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-    </svg>
-  );
-}
-
-function FacebookFIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-      <path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3.2V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z" />
-    </svg>
-  );
-}
 
 function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -343,16 +328,6 @@ export default function LoginPage({ onLogin }: { onLogin?: () => void }) {
     window.location.href = url;
   };
 
-  const handleFacebook = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    setError(null);
-    saveAuthMethod('facebook');
-    const endpoint = `${API_ORIGIN}/auth/facebook/login`;
-    if (e?.shiftKey) {
-      window.open(`${endpoint}?inspect=1`, "_blank", "noopener,noreferrer");
-      return;
-    }
-    redirectToOAuth(endpoint, "/auth/facebook/callback");
-  };
 
   const handleGoogle = async () => {
     setError(null);
@@ -653,24 +628,6 @@ export default function LoginPage({ onLogin }: { onLogin?: () => void }) {
                 </button>
               </div>
 
-              {/* Social sign-in buttons */}
-              <div className="mt-8 pt-8 border-t border-[#E7E5F7]">
-                <div className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={handleFacebook}
-                    disabled={isLoading}
-                    className="flex items-center justify-center gap-4 h-12 w-full max-w-[400px] rounded-full bg-gradient-to-r from-[#1877F2] to-[#42A5F5] hover:from-[#1565C0] hover:to-[#1E88E5] text-white font-semibold text-base shadow-[0_4px_12px_rgba(24,119,242,0.35)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-6"
-                    aria-label="Sign in with Facebook"
-                  >
-                    {/* Facebook logo in white circle */}
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white shrink-0">
-                      <FacebookFIcon className="h-4 w-4 text-[#1877F2]" />
-                    </div>
-                    <span className="text-[15px] font-semibold">Sign in with Facebook</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </motion.div>
         </AnimatePresence>

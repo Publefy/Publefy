@@ -63,8 +63,8 @@ const TermsPage = () => {
       <h2 className="text-xl font-semibold mt-6 mb-2">9. Contact Us</h2>
       <p>
         If you have questions about these Terms, contact us at{' '}
-        <a href="mailto:support@publefy.com" className="text-blue-600 underline" aria-label="Email support at support@publefy.com">
-          support@publefy.com
+        <a href="mailto:support@publefy.vercel.app" className="text-blue-600 underline" aria-label="Email support at support@publefy.vercel.app">
+          support@publefy.vercel.app
         </a>
       </p>
     </div>

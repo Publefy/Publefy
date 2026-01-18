@@ -357,7 +357,7 @@ export default function LoginPage({ onLogin }: { onLogin?: () => void }) {
   const handleGoogle = async () => {
     setError(null);
     try {
-      googleAuthService.setBaseUrl(API_ORIGIN || 'https://publefy-339761699392.europe-west1.run.app/');
+      googleAuthService.setBaseUrl(API_ORIGIN || 'https://publefy-1020068343725.us-central1.run.app/');
       await googleAuthService.initiateGoogleAuthAndRedirect();
     } catch (error: any) {
       console.error('❌ Ошибка Google OAuth в LoginPage:', error);

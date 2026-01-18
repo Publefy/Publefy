@@ -39,7 +39,7 @@ Restart the dev server so environment variables are picked up.
 Under the hood, `apiConfig.ts` reads `RAW_BASE` from `NEXT_PUBLIC_API_URL` and normalizes trailing slashes to form `API_BASE`:
 ```ts
 // services/api/apiConfig.ts
-const RAW_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://publefy-339761699392.europe-west1.run.app/";
+const RAW_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://publefy-1020068343725.us-central1.run.app/";
 export const API_BASE = RAW_BASE.replace(/\/+$/, "");
 ```
 

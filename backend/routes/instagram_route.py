@@ -162,7 +162,7 @@ def instagram_callback():
 
     # If user cancelled or there's an error, redirect back to frontend
     if error == "access_denied" or error_reason == "user_denied" or action == "cancel":
-        frontend_base = os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com").split(",")[0].strip()
+        frontend_base = os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.vercel.app").split(",")[0].strip()
         # Ensure we have a clean base URL without trailing slash for query param appending
         frontend_base = frontend_base.rstrip("/")
         return redirect(f"{frontend_base}/?instagram_connection=cancelled")

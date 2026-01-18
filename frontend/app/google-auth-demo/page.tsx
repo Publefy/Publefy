@@ -132,7 +132,7 @@ const GoogleAuthDemo: React.FC = () => {
                   <strong>GET</strong> /auth/google/callback
                 </div>
                 <div className="text-gray-600 mt-2">
-                  Базовый URL: <code>https://api.publefy.com</code>
+                  Базовый URL: <code>https://publefy-1020068343725.us-central1.run.app</code>
                 </div>
               </CardContent>
             </Card>

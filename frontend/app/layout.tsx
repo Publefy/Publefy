@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "OpenAI Meme Creator",
     "Instagram Scheduler",
   ],
-  authors: [{ name: "Publefy Team", url: "https://publefy.com" }],
+  authors: [{ name: "Publefy Team", url: "https://publefy.vercel.app" }],
   icons: {
     icon: "/publefy-logo.png",
     shortcut: "/publefy-logo.png",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: "https://publefy.com",
+    url: "https://publefy.vercel.app",
     title: "Publefy – AI-Powered Meme Generator",
     description:
       "Generate memes with AI, schedule and post them directly to Instagram with style-matched overlays and automation.",

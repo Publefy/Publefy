@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 const isPublefyHost = (value: string) => {
   try {
     const host = new URL(value).hostname.toLowerCase();
-    return host === "publefy.com" || host.endsWith(".publefy.com");
+    return host === "publefy.vercel.app" || host.endsWith(".publefy.vercel.app");
   } catch {
     return false;
   }
@@ -62,7 +62,7 @@ function toApiMediaUrl(raw?: string | null): string {
     return `${apiBase}/${trimmed}${query}`;
   };
 
-  // If absolute and from publefy.com, rewrite through our proxy/base instead of hitting publefy.com directly
+  // If absolute and from publefy.vercel.app, rewrite through our proxy/base instead of hitting publefy.vercel.app directly
   if (/^https?:\/\//i.test(raw)) {
     try {
       const url = new URL(raw);

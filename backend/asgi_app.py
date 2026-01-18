@@ -23,7 +23,7 @@ from asgiref.wsgi import WsgiToAsgi
 from main import flask_app
 
 api = FastAPI(
-    title="Publify API",
+    title="Publefy API",
     description="FastAPI docs + legacy Flask mounted at /legacy",
     version="1.0.0",
     docs_url="/docs",
@@ -37,8 +37,8 @@ api.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://publefy.com",
-        "https://www.publefy.com",
+        "https://publefy.vercel.app",
+        "https://www.publefy.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],

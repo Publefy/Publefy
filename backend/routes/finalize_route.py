@@ -58,7 +58,7 @@ def _make_thumbnail_from_video(video_path: str, out_path: str, at_seconds: float
 
 def _canonical_host() -> str:
     """
-    Prefer PUBLIC_HOST or current request host, then cloud-run host. Avoid publefy.com fallback.
+    Prefer PUBLIC_HOST or current request host, then cloud-run host. Avoid publefy.vercel.app fallback.
     """
     candidates = [
         (os.getenv("PUBLIC_HOST") or "").strip(),

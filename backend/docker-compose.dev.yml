@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  publefy-dev:
+    image: ghcr.io/OWNER/REPO/publefy:dev-${GIT_SHA:-latest}
+    container_name: publefy-api-dev
+    restart: unless-stopped
+    env_file:
+      - /opt/publefy-dev/.env.dev
+    ports:
+      - "127.0.0.1:18000:8000"   # only local; Nginx maps /dev → 18000
+    command: >
+      gunicorn asgi_app:api
+      -k uvicorn.workers.UvicornWorker
+      -w 2 --threads 4
+      --timeout 600 --graceful-timeout 120
+      --bind 0.0.0.0:8000 --log-level info
+      --forwarded-allow-ips="*"
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "wget -qO- http://127.0.0.1:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

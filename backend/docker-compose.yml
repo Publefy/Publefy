@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  publefy:
+    build: .
+    container_name: publefy-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    command: >
+      gunicorn asgi_app:api
+      -k uvicorn.workers.UvicornWorker
+      -w 2 --threads 4
+      --timeout 600 --graceful-timeout 120
+      --bind 0.0.0.0:8000 --log-level info
+      --forwarded-allow-ips="*"

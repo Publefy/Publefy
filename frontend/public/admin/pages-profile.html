@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Profile | Publefy Admin</title>
+	<link href="/admin/css/app.css" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+	<div class="wrapper">
+		<nav id="sidebar" class="sidebar js-sidebar">
+			<div class="sidebar-content js-simplebar">
+				<a class="sidebar-brand" href="/admin/dashboard.html"><span class="align-middle">Publefy Admin</span></a>
+								<ul class="sidebar-nav">
+					<li class="sidebar-header">Pages</li>
+					<li id="nav-dash" class="sidebar-item"><a class="sidebar-link" href="/admin/dashboard.html"><i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Dashboard</span></a></li>
+					<li id="nav-cust" class="sidebar-item"><a class="sidebar-link" href="/admin/customers.html"><i class="align-middle" data-feather="users"></i> <span class="align-middle">Customers</span></a></li>
+				</ul>
+			</div>
+		</nav>
+		<div class="main">
+			<nav class="navbar navbar-expand navbar-light navbar-bg">
+				<a class="sidebar-toggle js-sidebar-toggle"><i class="hamburger align-self-center"></i></a>
+				<div class="navbar-collapse collapse">
+					<ul class="navbar-nav navbar-align">
+						<li class="nav-item dropdown">
+							<a class="nav-icon dropdown-toggle d-none d-sm-inline-block" href="#" data-bs-toggle="dropdown">
+                <img src="/admin/img/avatars/avatar.jpg" class="avatar img-fluid rounded me-1" alt="Charles Hall" /> <span class="text-dark">Charles Hall</span>
+              </a>
+							<div class="dropdown-menu dropdown-menu-end">
+								<a class="dropdown-item" href="/admin/pages-profile.html"><i class="align-middle me-1" data-feather="user"></i> Profile</a>
+								<div class="dropdown-divider"></div>
+								<a class="dropdown-item" id="logoutBtnNav" href="#">Logout</a>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</nav>
+			<main class="content">
+				<div class="container-fluid p-0">
+					<div class="row">
+						<div class="col-md-4 col-xl-3">
+							<div class="card mb-3">
+								<div class="card-header"><h5 class="card-title mb-0">Client Details</h5></div>
+								<div class="card-body">
+									<div class="mb-3">
+										<label class="text-muted small">Name</label>
+										<div class="fw-bold" id="detail-name">-</div>
+									</div>
+									<div class="mb-3">
+										<label class="text-muted small">Username</label>
+										<div class="fw-bold" id="detail-username">-</div>
+									</div>
+									<div class="mb-3">
+										<label class="text-muted small">Password</label>
+										<div class="fw-bold" id="detail-password">-</div>
+									</div>
+									<div class="mb-3">
+										<label class="text-muted small">Email</label>
+										<div class="fw-bold" id="detail-email">-</div>
+									</div>
+									<div class="mb-3">
+										<label class="text-muted small">Location</label>
+										<div class="fw-bold" id="detail-location">-</div>
+									</div>
+								</div>
+								<hr class="my-0" />
+								<div class="card-body">
+									<h5 class="h6 card-title">Account Info</h5>
+									<div class="mb-2">
+										<label class="text-muted small">Created On</label>
+										<div id="detail-created">-</div>
+									</div>
+									<div class="mb-2">
+										<label class="text-muted small">Subscription Started</label>
+										<div id="detail-sub">-</div>
+									</div>
+								</div>
+								<hr class="my-0" />
+								<div class="card-body">
+									<h5 class="h6 card-title">Usage Statistics</h5>
+									<div class="mb-2">
+										<label class="text-muted small">Memes Posted</label>
+										<div class="badge bg-primary float-end" id="stat-memes">0</div>
+									</div>
+									<br>
+									<div class="mb-2">
+										<label class="text-muted small">Accounts Connected</label>
+										<div class="badge bg-success float-end" id="stat-accounts">0</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-8 col-xl-9">
+							<div class="card">
+								<div class="card-header"><h5 class="card-title mb-0">Payment History</h5></div>
+								<div class="card-body">
+									<table class="table table-sm my-0">
+										<thead>
+											<tr>
+												<th>Date</th>
+												<th>Amount</th>
+												<th>Status</th>
+												<th>Invoice</th>
+											</tr>
+										</thead>
+										<tbody id="payment-list">
+											<!-- Dynamic Content -->
+										</tbody>
+									</table>
+								</div>
+							</div>
+							<div class="card">
+								<div class="card-header"><h5 class="card-title mb-0">Recent Activities</h5></div>
+								<div class="card-body h-100" id="activity-list">
+									<!-- Dynamic Content -->
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+	<script src="/admin/js/app.js"></script>
+	<script>
+		if (localStorage.getItem('admin_auth') !== 'true') { window.location.href = '/admin/index.html'; }
+		document.getElementById('logoutBtnNav')?.addEventListener('click', function(e) {
+			e.preventDefault(); localStorage.removeItem('admin_auth'); window.location.href = '/admin/index.html';
+		});
+	</script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			const params = new URLSearchParams(window.location.search);
+			const user = params.get('user');
+			
+			const userData = {
+				'alex': {
+					name: 'Alex Thompson', username: 'alex_t88', password: 'password123!', email: 'alex@example.com', location: 'New York, USA',
+					created: 'Dec 12, 2022', subStarted: 'Jan 01, 2023', memes: '1,284', accounts: '5',
+					payments: [{date: 'Jan 01, 2024', amt: '$29.00', status: 'Paid'}, {date: 'Dec 01, 2023', amt: '$29.00', status: 'Paid'}],
+					activities: ['Posted new meme "Monday Blues"', 'Connected TikTok account']
+				},
+				'sarah': {
+					name: 'Sarah Jenkins', username: 'sjenkins_pro', password: 'secure_pass_99', email: 'sarah.j@outlook.com', location: 'London, UK',
+					created: 'Feb 15, 2023', subStarted: 'Mar 15, 2023', memes: '452', accounts: '2',
+					payments: [{date: 'Mar 15, 2024', amt: '$9.00', status: 'Paid'}],
+					activities: ['Scheduled 5 posts', 'Updated profile picture']
+				},
+				'michael': {
+					name: 'Michael Ross', username: 'mike_ross_free', password: 'mike_rocks_1', email: 'm.ross@gmail.com', location: 'Toronto, CA',
+					created: 'May 20, 2023', subStarted: 'N/A (Free)', memes: '12', accounts: '1',
+					payments: [],
+					activities: ['Joined Publefy', 'Generated first meme']
+				},
+				'elena': {
+					name: 'Elena Rodriguez', username: 'elena_enterprise', password: 'custom_secret_77', email: 'e.rodriguez@corp.com', location: 'Madrid, ES',
+					created: 'Jan 05, 2023', subStarted: 'Jan 10, 2023', memes: '5,920', accounts: '25',
+					payments: [{date: 'Jan 10, 2024', amt: '$1,200.00', status: 'Paid'}],
+					activities: ['Bulk uploaded 50 videos', 'Added new team member']
+				}
+			};
+
+			const data = userData[user] || userData['alex'];
+			
+			document.getElementById('detail-name').textContent = data.name;
+			document.getElementById('detail-username').textContent = data.username;
+			document.getElementById('detail-password').textContent = data.password;
+			document.getElementById('detail-email').textContent = data.email;
+			document.getElementById('detail-location').textContent = data.location;
+			document.getElementById('detail-created').textContent = data.created;
+			document.getElementById('detail-sub').textContent = data.subStarted;
+			document.getElementById('stat-memes').textContent = data.memes;
+			document.getElementById('stat-accounts').textContent = data.accounts;
+
+			const paymentList = document.getElementById('payment-list');
+			paymentList.innerHTML = '';
+			if (data.payments.length > 0) {
+				data.payments.forEach(p => {
+					paymentList.innerHTML += `<tr><td>${p.date}</td><td>${p.amt}</td><td><span class="badge bg-success">${p.status}</span></td><td><a href="#">View</a></td></tr>`;
+				});
+			} else {
+				paymentList.innerHTML = '<tr><td colspan="4" class="text-center">No payment history available</td></tr>';
+			}
+
+			const activityList = document.getElementById('activity-list');
+			activityList.innerHTML = '';
+			data.activities.forEach(a => {
+				activityList.innerHTML += `<div class="d-flex align-items-start mb-3"><div class="flex-grow-1"><strong>${a}</strong><br><small class="text-muted">Recently</small></div></div><hr>`;
+			});
+		});
+	</script>
+</body>
+</html>
+

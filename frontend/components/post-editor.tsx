@@ -39,7 +39,7 @@ function toApiMediaUrl(raw?: string | null): string {
     try {
       const url = new URL(normalized)
       const host = url.hostname.toLowerCase()
-      if (mediaBase && (host === "publefy.vercel.app" || host === "www.publefy.vercel.app")) {
+      if (mediaBase && (host === "publefy.com" || host === "www.publefy.com" || host === "publefy.vercel.app" || host === "www.publefy.vercel.app")) {
         const cleanPath = url.pathname.replace(/^\/+/, "")
         return `${mediaBase}/${cleanPath}${url.search || ""}`
       }

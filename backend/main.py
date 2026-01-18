@@ -48,9 +48,10 @@ def create_app():
         origins=[
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "https://publefy.com",
+            "https://www.publefy.com",
             "https://publefy.vercel.app",
             "https://www.publefy.vercel.app",
-            "https://publefy.vercel.app",
             "https://v0-publefy-kzc5ljvpd-artifex-97bd4d3c.vercel.app/"
         ],
         expose_headers=["*"],
@@ -133,6 +134,8 @@ def create_app():
         allowed_origins = [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "https://publefy.com",
+            "https://www.publefy.com",
             "https://publefy.vercel.app",
             "https://www.publefy.vercel.app"
         ]

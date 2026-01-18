@@ -65,10 +65,10 @@ export default function PrivacyPage() {
       <p>
         For questions or requests, contact us at:{" "}
         <a
-          href="mailto:support@publefy.vercel.app"
+          href="mailto:support@publefy.com"
           className="text-blue-600 underline"
         >
-          support@publefy.vercel.app
+          support@publefy.com
         </a>
       </p>
     </div>

@@ -1,0 +1,44 @@
+# Node.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+backend/.venv/
+backend/venv/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env*
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Project specific
+backend/publefy_gcp_sk.json
+frontend/PublefyFront
+

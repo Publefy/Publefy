@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 
 # Facebook
 # Support both legacy and common env var names
-FB_APP_ID_Client = "25266816979636362"
-FB_APP_SECRET_Client = "bfc276034da82f0f60ac7112163d809a"
+FB_APP_ID_Client = "684530967977171"
+FB_APP_SECRET_Client = "7fc8257eaf48699be4b2866b896e7697"
 FB_LOGIN_REDIRECT_URI = os.getenv("FB_LOGIN_REDIRECT_URI")
 GRAPH_API_URL = "https://graph.facebook.com/v23.0"
 

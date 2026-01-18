@@ -571,7 +571,13 @@ def google_login():
     return_to = _select_app_return_uri()
     session["google_return_to"] = return_to
 
-    chosen_redirect_uri = _select_redirect_uri_for_google(GOOGLE_LOGIN_REDIRECT_URI)
+    # Determine which redirect_uri to use for Google
+    passed_redirect_uri = request.args.get("redirect_uri")
+    if passed_redirect_uri:
+        chosen_redirect_uri = passed_redirect_uri
+    else:
+        chosen_redirect_uri = _select_redirect_uri_for_google(GOOGLE_LOGIN_REDIRECT_URI)
+        
     session["google_chosen_redirect_uri"] = chosen_redirect_uri
     try:
         current_app.logger.info(f"Google OAuth chosen redirect_uri: {chosen_redirect_uri}")

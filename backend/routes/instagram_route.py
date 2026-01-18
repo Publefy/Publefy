@@ -42,7 +42,7 @@ load_dotenv()
 FB_APP_ID = os.getenv("FB_APP_ID")
 FB_APP_SECRET = os.getenv("FB_APP_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
-GRAPH_API_URL = "https://graph.facebook.com/v23.0"
+GRAPH_API_URL = "https://graph.facebook.com/v21.0"
 
 instagram_bp = Blueprint("instagram", __name__, url_prefix="/instagram")
 
@@ -138,9 +138,14 @@ def instagram_login():
         return jsonify({"error": "Missing required environment variables"}), 500
 
     # #region agent log
-    with open(r'c:\Users\nikit\publefy\.cursor\debug.log', 'a') as f:
-        import json, time
-        f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'C', 'location': 'instagram_route.py:140', 'message': 'IG Login Params', 'data': {'client_id': FB_APP_ID, 'redirect_uri': REDIRECT_URI}, 'timestamp': int(time.time() * 1000)}) + '\n')
+    print(f"DEBUG: IG Login Params: client_id={FB_APP_ID}, redirect_uri={REDIRECT_URI}")
+    try:
+        import json, time, os as py_os
+        log_path = 'debug.log'
+        with open(log_path, 'a') as f:
+            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'C', 'location': 'instagram_route.py:140', 'message': 'IG Login Params', 'data': {'client_id': FB_APP_ID, 'redirect_uri': REDIRECT_URI}, 'timestamp': int(time.time() * 1000)}) + '\n')
+    except Exception:
+        pass
     # #endregion
 
     token = request.args.get("state")  # JWT from frontend

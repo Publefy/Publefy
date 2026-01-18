@@ -14,10 +14,10 @@ from datetime import datetime, timezone
 
 # Facebook
 # Support both legacy and common env var names
-FB_APP_ID_Client = "684530967977171"
-FB_APP_SECRET_Client = "7fc8257eaf48699be4b2866b896e7697"
+FB_APP_ID_Client = os.getenv("FB_APP_ID", "684530967977171")
+FB_APP_SECRET_Client = os.getenv("FB_APP_SECRET", "7fc8257eaf48699be4b2866b896e7697")
 FB_LOGIN_REDIRECT_URI = os.getenv("FB_LOGIN_REDIRECT_URI")
-GRAPH_API_URL = "https://graph.facebook.com/v20.0"
+GRAPH_API_URL = "https://graph.facebook.com/v23.0"
 
 # Google
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -428,7 +428,7 @@ def facebook_login():
         }
         return jsonify({
             "chosen_redirect_uri": chosen_redirect_uri,
-            "facebook_auth_url": f"https://www.facebook.com/v20.0/dialog/oauth?{urlencode(fb_params)}",
+            "facebook_auth_url": f"https://www.facebook.com/v23.0/dialog/oauth?{urlencode(fb_params)}",
         })
 
     params = {
@@ -440,7 +440,7 @@ def facebook_login():
         "response_type": "code",
         "state": state,
     }
-    return redirect(f"https://www.facebook.com/v20.0/dialog/oauth?{urlencode(params)}")
+    return redirect(f"https://www.facebook.com/v23.0/dialog/oauth?{urlencode(params)}")
 
 
 @auth_blueprint.route("/facebook/callback", methods=["GET"])

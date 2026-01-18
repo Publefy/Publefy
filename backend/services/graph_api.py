@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional
 
 FB_APP_ID = os.getenv("FB_APP_ID")
 FB_APP_SECRET = os.getenv("FB_APP_SECRET")
-GRAPH_API_URL = os.getenv("GRAPH_API_URL", "https://graph.facebook.com/v20.0")
+GRAPH_API_URL = os.getenv("GRAPH_API_URL", "https://graph.facebook.com/v23.0")
 
 def _appsecret_proof(token: str) -> str:
     if not FB_APP_SECRET:

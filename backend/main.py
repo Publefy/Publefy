@@ -128,8 +128,20 @@ def create_app():
     # ---- CORS headers after each request (ALWAYS ADD) ----------------
     @app.after_request
     def after_request(response):
-        # ALWAYS add CORS headers for ALL responses
-        response.headers["Access-Control-Allow-Origin"] = "*"
+        # Allow specific origins when credentials are supported
+        origin = request.headers.get("Origin")
+        allowed_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "https://publefy.vercel.app",
+            "https://www.publefy.vercel.app"
+        ]
+        
+        if origin in allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+        elif not origin: # fallback for non-browser requests
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            
         response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,Accept,Origin,X-Requested-With"
         response.headers["Access-Control-Allow-Methods"] = "GET,POST,DELETE,PATCH,OPTIONS,PUT"
         response.headers["Access-Control-Allow-Credentials"] = "true"

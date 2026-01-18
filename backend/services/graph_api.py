@@ -6,8 +6,8 @@ import requests
 from typing import Dict, Any, Optional
 
 
-FB_APP_ID = "684530967977171"
-FB_APP_SECRET = "7fc8257eaf48699be4b2866b896e7697"
+FB_APP_ID = os.getenv("FB_APP_ID")
+FB_APP_SECRET = os.getenv("FB_APP_SECRET")
 GRAPH_API_URL = os.getenv("GRAPH_API_URL", "https://graph.facebook.com/v23.0")
 
 def _appsecret_proof(token: str) -> str:

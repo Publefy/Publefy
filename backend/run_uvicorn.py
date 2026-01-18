@@ -18,13 +18,13 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     debug = os.getenv("FLASK_DEBUG") == "1"
 
-    print(f"Starting ASGI server on http://127.0.0.1:{port}")
+    print(f"Starting ASGI server on http://0.0.0.0:{port}")
     print(f"Debug mode: {debug}")
 
     # Use import string for reload support
     uvicorn.run(
         "asgi_app:api",
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=port,
         reload=debug,
         log_level="info",

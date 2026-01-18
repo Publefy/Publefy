@@ -12,7 +12,7 @@ from utils.time_parse import parse_to_utc_dt
 from database import db
 from services.reel_service import update_post_data
 
-GRAPH_API_URL = "https://graph.facebook.com/v23.0"
+GRAPH_API_URL = "https://graph.facebook.com/v20.0"
 
 # Run scheduler in UTC to match how we store scheduled_time (UTC)
 scheduler = BackgroundScheduler(timezone=timezone.utc)

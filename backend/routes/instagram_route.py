@@ -42,7 +42,7 @@ load_dotenv()
 FB_APP_ID = os.getenv("FB_APP_ID")
 FB_APP_SECRET = os.getenv("FB_APP_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
-GRAPH_API_URL = "https://graph.facebook.com/v23.0"
+GRAPH_API_URL = "https://graph.facebook.com/v20.0"
 
 instagram_bp = Blueprint("instagram", __name__, url_prefix="/instagram")
 
@@ -148,7 +148,7 @@ def instagram_login():
         "response_type": "code",
         "state": token
     }
-    auth_url = f"https://www.facebook.com/v23.0/dialog/oauth?{urlencode(params)}"
+    auth_url = f"https://www.facebook.com/v20.0/dialog/oauth?{urlencode(params)}"
     return redirect(auth_url)
 
 

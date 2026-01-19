@@ -40,36 +40,43 @@ def analyze_video():
         sentry_sdk.capture_message("Analyze: Missing video!", level="warning")  # --- Sentry ---
         return jsonify({"error": "Missing video!"}), 400
 
-    # --- Points Check: Verify user has enough points BEFORE starting generation ---
+    # --- Points Check: Verify user has enough points BEFORE starting generation (skip for unlimited plan) ---
     try:
         user_id = str(g.current_user["_id"])
         user_doc = db.users.find_one({"_id": ObjectId(user_id)})
         if not user_doc:
             return jsonify({"error": "User not found"}), 404
         
-        usage = user_doc.get("usage")
+        # Check if user has unlimited plan
+        sub = user_doc.get("subscription", {})
+        plan = (sub.get("plan") or user_doc.get("plan") or "free").lower()
+        is_unlimited = plan == "unlimited"
         
-        # Lazy initialization for existing users missing usage field
-        if not usage:
-            usage = {
-                "points_balance": 16,
-                "points_total_limit": 16,
-                "points_used": 0,
-                "total_videos_generated": 0
-            }
-            db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
-        
-        balance = usage.get("points_balance", 0)
-        
-        # Analysis costs 1 point
-        required_points = 1
-        if balance < required_points:
-            return jsonify({
-                "error": "insufficient_points",
-                "message": f"You don't have enough points to analyze this video. You need {required_points} point but only have {balance} points remaining. Please upgrade your plan to get more points.",
-                "points_balance": balance,
-                "points_required": required_points
-            }), 403
+        # Skip points check for unlimited plan
+        if not is_unlimited:
+            usage = user_doc.get("usage")
+            
+            # Lazy initialization for existing users missing usage field
+            if not usage:
+                usage = {
+                    "points_balance": 16,
+                    "points_total_limit": 16,
+                    "points_used": 0,
+                    "total_videos_generated": 0
+                }
+                db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
+            
+            balance = usage.get("points_balance", 0)
+            
+            # Analysis costs 1 point
+            required_points = 1
+            if balance < required_points:
+                return jsonify({
+                    "error": "insufficient_points",
+                    "message": f"You don't have enough points to analyze this video. You need {required_points} point but only have {balance} points remaining. Please upgrade your plan to get more points.",
+                    "points_balance": balance,
+                    "points_required": required_points
+                }), 403
     except Exception as e:
         sentry_sdk.capture_exception(e)
         return jsonify({"error": "Failed to check points balance"}), 500

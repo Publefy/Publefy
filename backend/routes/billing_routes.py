@@ -51,7 +51,8 @@ def create_checkout_session():
             'metadata': {
                 "plan": plan_name,
                 "user_id": str(user["_id"])
-            }
+            },
+            'allow_promotion_codes': True,
         }
         
         # If we have a customer ID, use it. Otherwise, use email.

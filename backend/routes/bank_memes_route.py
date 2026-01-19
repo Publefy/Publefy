@@ -677,8 +677,17 @@ def _get_user_plan(user_id: str) -> str:
     
     return (user.get("plan") or "free").lower()
 
+def _is_unlimited_plan(user_id: str) -> bool:
+    """Check if user has unlimited plan (bypasses all restrictions)"""
+    plan = _get_user_plan(user_id)
+    return plan == "unlimited"
+
 def _should_watermark(user_id: str) -> bool:
-    return _get_user_plan(user_id) in FREE_PLANS
+    plan = _get_user_plan(user_id)
+    # Unlimited plan users don't get watermarks
+    if plan == "unlimited":
+        return False
+    return plan in FREE_PLANS
 
 def _blob_fingerprint(blob) -> str:
     """
@@ -1072,31 +1081,32 @@ def generate_memes_from_bank():
         return jsonify({"error": "Unauthorized: missing user context"}), 401
     user_id = user["_id"]
 
-    # --- Points System: Check Balance ---
-    user_doc = db.users.find_one({"_id": ObjectId(user_id)})
-    if not user_doc:
-        return jsonify({"error": "User not found"}), 404
-    
-    usage = user_doc.get("usage")
-    
-    # Lazy initialization for existing users missing usage field
-    if not usage:
-        usage = {
-            "points_balance": 16,
-            "points_total_limit": 16,
-            "points_used": 0,
-            "total_videos_generated": 0
-        }
-        db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
-    
-    balance = usage.get("points_balance", 0)
-    
-    # Each batch generation of 5 videos costs 5 points (1 per video)
-    if balance < count:
-        return jsonify({
-            "error": "Insufficient points",
-            "message": f"You need {count} points but only have {balance}. Please upgrade to Pro."
-        }), 403
+    # --- Points System: Check Balance (skip for unlimited plan) ---
+    if not _is_unlimited_plan(user_id):
+        user_doc = db.users.find_one({"_id": ObjectId(user_id)})
+        if not user_doc:
+            return jsonify({"error": "User not found"}), 404
+        
+        usage = user_doc.get("usage")
+        
+        # Lazy initialization for existing users missing usage field
+        if not usage:
+            usage = {
+                "points_balance": 16,
+                "points_total_limit": 16,
+                "points_used": 0,
+                "total_videos_generated": 0
+            }
+            db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
+        
+        balance = usage.get("points_balance", 0)
+        
+        # Each batch generation of 5 videos costs 5 points (1 per video)
+        if balance < count:
+            return jsonify({
+                "error": "Insufficient points",
+                "message": f"You need {count} points but only have {balance}. Please upgrade to Pro."
+            }), 403
     # -----------------------------------
 
     ig_id_input = (body.get("igId") or "").strip()
@@ -1285,8 +1295,8 @@ def generate_memes_from_bank():
             })
             applied_prompts.append(chosen)
 
-        # --- Points System: Deduct Balance ---
-        if items:
+        # --- Points System: Deduct Balance (skip for unlimited plan) ---
+        if items and not _is_unlimited_plan(user_id):
             actual_count = len(items)
             db.users.update_one(
                 {"_id": ObjectId(user_id)},
@@ -1674,26 +1684,28 @@ def regen_at_from_bank():
     if not user_doc:
         return jsonify({"error": "User not found"}), 404
     
-    usage = user_doc.get("usage")
-    
-    # Lazy initialization for existing users missing usage field
-    if not usage:
-        usage = {
-            "points_balance": 16,
-            "points_total_limit": 16,
-            "points_used": 0,
-            "total_videos_generated": 0
-        }
-        db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
-    
-    balance = usage.get("points_balance", 0)
-    
-    # Each regeneration costs 1 point
-    if balance < 1:
-        return jsonify({
-            "error": "Insufficient points",
-            "message": "You need at least 1 point to regenerate a video. Please upgrade to Pro."
-        }), 403
+    # --- Points System: Check Balance (skip for unlimited plan) ---
+    if not _is_unlimited_plan(user_id):
+        usage = user_doc.get("usage")
+        
+        # Lazy initialization for existing users missing usage field
+        if not usage:
+            usage = {
+                "points_balance": 16,
+                "points_total_limit": 16,
+                "points_used": 0,
+                "total_videos_generated": 0
+            }
+            db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
+        
+        balance = usage.get("points_balance", 0)
+        
+        # Each regeneration costs 1 point
+        if balance < 1:
+            return jsonify({
+                "error": "Insufficient points",
+                "message": "You need at least 1 point to regenerate a video. Please upgrade to Pro."
+            }), 403
     # -----------------------------------
 
     watermark = _should_watermark(user_id) if user_id else True
@@ -1749,17 +1761,18 @@ def regen_at_from_bank():
     rng.shuffle(candidates)
     pick, fp = candidates[0]
 
-    # --- Points System: Deduct 1 Point ---
-    db.users.update_one(
-        {"_id": ObjectId(user_id)},
-        {
-            "$inc": {
-                "usage.points_balance": -1,
-                "usage.points_used": 1
-            },
-            "$set": {"updated_at": _now_iso()}
-        }
-    )
+    # --- Points System: Deduct 1 Point (skip for unlimited plan) ---
+    if not _is_unlimited_plan(user_id):
+        db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {
+                "$inc": {
+                    "usage.points_balance": -1,
+                    "usage.points_used": 1
+                },
+                "$set": {"updated_at": _now_iso()}
+            }
+        )
     # -------------------------------------
 
     # format response item

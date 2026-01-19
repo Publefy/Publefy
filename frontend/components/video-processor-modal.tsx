@@ -297,6 +297,7 @@ type MemeBankItem = {
   text?: string;
   assets: { full?: string; thumb?: string };
   thumbIsVideo?: boolean;
+  regenCount?: number; // track cap of 2
 
   _generated?: true;
   _reelId?: string;
@@ -356,6 +357,7 @@ function normalizeMemeBankItem(item: MemeBankItem): MemeBankItem {
     ...item,
     assets: { ...item.assets, full, thumb },
     thumbIsVideo,
+    regenCount: item.regenCount ?? 0,
   };
 }
 
@@ -374,6 +376,7 @@ export function VideoProcessorModal({
   profile: Profile | null;
   onOpenChange: (open: boolean) => void;
   onVideoGenerated: (videoUrl: string) => void;
+  onUsageUpdate?: () => void;
   initialFile?: File;
   initialAnalysis?: { videoSummary: string; memeOptions: string[]; selectedMemeOption?: string };
 }) {
@@ -914,6 +917,7 @@ export function VideoProcessorModal({
         console.log("[generate-memes] Combined meme count:", combined.length);
         return combined;
       });
+      onUsageUpdate?.(); // Refresh usage after generation
       generationSucceeded = true;
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
 
@@ -973,6 +977,14 @@ export function VideoProcessorModal({
   const handleRegenerateMeme = async (memeId: string) => {
     if (!requireAuth("regenerate memes")) return;
     const item = generatedMemes.find(m => m.id === memeId);
+    if (item && (item.regenCount ?? 0) >= 2) {
+      toast({
+        title: "Limit reached",
+        description: "You can only regenerate each video twice.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const keyword = memeNiche.trim();
     if (!keyword) return;
@@ -1002,8 +1014,9 @@ export function VideoProcessorModal({
       }
 
       setGeneratedMemes((prev) =>
-        prev.map((m) => (m.id === memeId ? normalizeMemeBankItem(data.item!) : m))
+        prev.map((m) => (m.id === memeId ? { ...normalizeMemeBankItem(data.item!), regenCount: (m.regenCount ?? 0) + 1 } : m))
       );
+      onUsageUpdate?.(); // Refresh usage after regeneration
       toast({ title: "Regenerated", description: "Swapped with another matching video." });
     } catch (err: any) {
       toast({
@@ -1553,8 +1566,8 @@ export function VideoProcessorModal({
                               <button
                                 type="button"
                                 onClick={() => handleRegenerateMeme(meme.id)}
-                                disabled={regeneratingMemeId === meme.id}
-                                title="Get a different template"
+                                disabled={regeneratingMemeId === meme.id || (meme.regenCount ?? 0) >= 2}
+                                title={ (meme.regenCount ?? 0) >= 2 ? "Regeneration limit reached (max 2)" : "Get a different template"}
                                 className={cn(
                                   "w-full px-3 py-1.5 rounded-full text-xs font-medium h-[32px]",
                                   "border border-[#E7E5F7] bg-white/50 backdrop-blur-sm",
@@ -1564,7 +1577,7 @@ export function VideoProcessorModal({
                                   prefersReducedMotion ? "" : "transition-all duration-200 active:scale-[0.97]"
                                 )}
                               >
-                                {regeneratingMemeId === meme.id ? "Regenerating..." : "Regenerate"}
+                                {regeneratingMemeId === meme.id ? "Regenerating..." : (meme.regenCount ?? 0) >= 2 ? "Limit Reached" : "Regenerate"}
                               </button>
                             </div>
                           </div>

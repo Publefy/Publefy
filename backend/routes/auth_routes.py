@@ -66,6 +66,7 @@ def _issue_login_response(user: dict):
             "name": user.get("name"),
             "email": user.get("email"),
             "subscription": user.get("subscription", {"plan": "free", "status": "active"}),
+            "usage": user.get("usage", {"points_balance": 0, "points_total_limit": 0, "points_used": 0}),
         },
     }
 
@@ -192,6 +193,12 @@ def _upsert_user(provider: str, pid: str, name: str, email: str | None, picture:
                 "current_period_end": None,
                 "cancel_at_period_end": False
             },
+            "usage": {
+                "points_balance": 16,
+                "points_total_limit": 16,
+                "points_used": 0,
+                "total_videos_generated": 0
+            },
             "created_at": _now_iso(),
             "updated_at": _now_iso(),
         }
@@ -206,7 +213,8 @@ def _redirect_back(jwt: str, user: dict, return_to: str | None):
         "id": str(user["_id"]),
         "name": user.get("name"),
         "email": user.get("email"),
-        "subscription": user.get("subscription", {"plan": "free", "status": "active"})
+        "subscription": user.get("subscription", {"plan": "free", "status": "active"}),
+        "usage": user.get("usage", {"points_balance": 0, "points_total_limit": 0, "points_used": 0})
     }
     b64_user = base64.urlsafe_b64encode(json.dumps(safe_user).encode()).decode()
     target = (return_to or APP_WEB_REDIRECT_URI or "/").strip()
@@ -778,5 +786,6 @@ def get_me():
         "id": str(user["_id"]),
         "name": user.get("name"),
         "email": user.get("email"),
-        "subscription": user.get("subscription", {"plan": "free", "status": "active"})
+        "subscription": user.get("subscription", {"plan": "free", "status": "active"}),
+        "usage": user.get("usage", {"points_balance": 0, "points_total_limit": 0, "points_used": 0})
     })

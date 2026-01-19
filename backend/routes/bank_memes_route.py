@@ -33,6 +33,9 @@ from google.genai import types
 from google.auth import default as google_auth_default
 
 
+def _now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
 bank_memes_blueprint = Blueprint("bank_memes", __name__, url_prefix="/memes")
 
 
@@ -1037,6 +1040,22 @@ def generate_memes_from_bank():
         return jsonify({"error": "Unauthorized: missing user context"}), 401
     user_id = user["_id"]
 
+    # --- Points System: Check Balance ---
+    user_doc = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user_doc:
+        return jsonify({"error": "User not found"}), 404
+    
+    usage = user_doc.get("usage", {})
+    balance = usage.get("points_balance", 0)
+    
+    # Each batch generation of 5 videos costs 5 points (1 per video)
+    if balance < count:
+        return jsonify({
+            "error": "Insufficient points",
+            "message": f"You need {count} points but only have {balance}. Please upgrade to Pro."
+        }), 403
+    # -----------------------------------
+
     ig_id_input = (body.get("igId") or "").strip()
     profile_id_input = (body.get("profileId") or "").strip()
     prof_doc = None
@@ -1222,6 +1241,22 @@ def generate_memes_from_bank():
                 "scheduleReady": True,
             })
             applied_prompts.append(chosen)
+
+        # --- Points System: Deduct Balance ---
+        if items:
+            actual_count = len(items)
+            db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {
+                    "$inc": {
+                        "usage.points_balance": -actual_count,
+                        "usage.points_used": actual_count,
+                        "usage.total_videos_generated": actual_count
+                    },
+                    "$set": {"updated_at": _now_iso()}
+                }
+            )
+        # ------------------------------------
 
         return jsonify({
             "keyword": prompt_hint or None,
@@ -1587,7 +1622,26 @@ def regen_at_from_bank():
 
     # never-repeat (only if repeats disabled)
     user = getattr(g, "current_user", None)
-    user_id = user["_id"] if user and user.get("_id") else None
+    if not user or not user.get("_id"):
+        return jsonify({"error": "Unauthorized"}), 401
+    user_id = user["_id"]
+
+    # --- Points System: Check Balance ---
+    user_doc = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user_doc:
+        return jsonify({"error": "User not found"}), 404
+    
+    usage = user_doc.get("usage", {})
+    balance = usage.get("points_balance", 0)
+    
+    # Each regeneration costs 1 point
+    if balance < 1:
+        return jsonify({
+            "error": "Insufficient points",
+            "message": "You need at least 1 point to regenerate a video. Please upgrade to Pro."
+        }), 403
+    # -----------------------------------
+
     watermark = _should_watermark(user_id) if user_id else True
     used_fps: set[str] = set()
     if user_id and not allow_repeats:
@@ -1640,6 +1694,19 @@ def regen_at_from_bank():
     rng = random.Random(uuid4().int & ((1 << 31) - 1))
     rng.shuffle(candidates)
     pick, fp = candidates[0]
+
+    # --- Points System: Deduct 1 Point ---
+    db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {
+            "$inc": {
+                "usage.points_balance": -1,
+                "usage.points_used": 1
+            },
+            "$set": {"updated_at": _now_iso()}
+        }
+    )
+    # -------------------------------------
 
     # format response item
     name = pick.name

@@ -56,6 +56,23 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
   const [quickEditorOrigin, setQuickEditorOrigin] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [loadingProfiles, setLoadingProfiles] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [usage, setUsage] = useState({ points_balance: 0, points_total_limit: 0 });
+
+  const fetchUsage = useCallback(async () => {
+    try {
+      const data = await apiServiceDefault.get<any>("/auth/me");
+      if (data && data.usage) {
+        setUsage(data.usage);
+      }
+    } catch (error) {
+      console.error("Failed to fetch usage:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsage();
+  }, [fetchUsage]);
+
   const { toast } = useToast();
   // Show the boot skeleton only while we don't know which profile to render.
   const isBootLoading = loadingProfiles;
@@ -237,7 +254,8 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
     newItem.type = "video";
     newItem.selected = false;
     setMediaItems((prev) => [newItem, ...prev]);
-  }, []);
+    fetchUsage(); // Refresh usage after generation
+  }, [fetchUsage]);
 
   const handleDateChange = useCallback((date: Date) => {
     setCurrentDate(date);
@@ -613,6 +631,22 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
 
           {/* Sidebar Bottom Section */}
           <div className="p-3 border-t border-[#E7E5F7]/40 space-y-1">
+            {/* Points Usage Bar */}
+            {usage.points_total_limit > 0 && (
+              <div className="px-3 py-2 mb-2 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-[10px] font-bold text-[#301B69]/60 uppercase tracking-tight">Credits</span>
+                  <span className="text-[11px] font-semibold text-[#301B69]">{usage.points_balance} / {usage.points_total_limit}</span>
+                </div>
+                <div className="h-1.5 w-full bg-[#E7E5F7] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#7C7EF4] to-[#6F80F0] transition-all duration-1000" 
+                    style={{ width: `${Math.min(100, (usage.points_balance / usage.points_total_limit) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => router.push("/account")}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#301B69] hover:bg-[#7C7EF4]/10 transition-colors group"
@@ -798,6 +832,7 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
         profile={selectedProfile}
         onOpenChange={setVideoProcessorOpen}
         onVideoGenerated={handleNewVideoGenerated}
+        onUsageUpdate={fetchUsage}
         initialFile={(() => {
           try {
             if (typeof window === "undefined") return undefined;

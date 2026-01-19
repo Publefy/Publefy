@@ -1092,35 +1092,61 @@ export function CalendarView({
       ensureThumb(post as any)
     }, [post, ensureThumb])
 
+    // Get video duration from videoItems if available
+    const videoMatch = videoItems.find((x) => x.id === post.reel_id)
+    const videoDuration = (videoMatch as any)?.duration || (videoMatch as any)?.video_duration || ""
+
     return (
-      <div
-        onClick={(e) => {
-          e.stopPropagation()
-          onClick()
-        }}
-        draggable={!!onDragStart}
-        onDragStart={onDragStart}
-        className={cn(
-          "relative aspect-[9/16] w-[45px] sm:w-[50px] md:w-[56px] lg:w-[64px] rounded-md overflow-hidden bg-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer group",
-          "border border-[#E7E5F7]/60 hover:border-[#7C7EF4]/60 hover:scale-[1.02]",
-          dragOver && "pointer-events-none"
-        )}
-      >
-        {thumb ? (
-          <img src={thumb} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center p-2 text-white/50">
-            <Film className="w-full h-full" />
-          </div>
-        )}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick()
+              }}
+              draggable={!!onDragStart}
+              onDragStart={onDragStart}
+              className={cn(
+                "relative w-[20px] h-[20px] rounded overflow-hidden bg-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer group",
+                "border-2 border-transparent hover:border-[#7C7EF4]",
+                dragOver && "pointer-events-none"
+              )}
+            >
+              {thumb ? (
+                <img src={thumb} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
+                  <Film className="h-2.5 w-2.5" />
+                </div>
+              )}
 
-        {/* Platform icon overlay */}
-        <div className="absolute top-1 right-1 p-0.5 bg-black/40 backdrop-blur-[2px] rounded shadow-sm">
-          <Instagram className="h-2.5 w-2.5 text-white" />
-        </div>
+              {/* Duration overlay - top left */}
+              {videoDuration && (
+                <div className="absolute top-0 left-0 bg-black/70 px-0.5 py-0 text-[6px] text-white font-medium leading-tight">
+                  {videoDuration}
+                </div>
+              )}
 
-        {/* Hover lift effect logic is in the container class scale-[1.02] */}
-      </div>
+              {/* Play icon - bottom right */}
+              <div className="absolute bottom-0 right-0 p-0.5">
+                <SquarePlay className="h-1.5 w-1.5 text-white drop-shadow-lg" />
+              </div>
+
+              {/* Hover edit overlay */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/30 rounded transition-opacity duration-200 pointer-events-none">
+                <Pencil className="h-2.5 w-2.5 text-white drop-shadow-md" />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="p-2">
+            <p className="max-w-[240px] font-medium line-clamp-2">{post.caption || "No caption"}</p>
+            <p className="text-xs text-muted-foreground pt-1">
+              Scheduled: {format(new Date(post.scheduled_time), "MMM d, h:mm a")}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )
   })
 

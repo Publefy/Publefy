@@ -17,9 +17,9 @@ webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 def _get_points_limit_for_plan(plan: str) -> int:
     """Get points limit based on subscription plan"""
     plan_limits = {
-        "free": 10,
+        "free": 16,
         "entry": 100,  # Updated to 100
-        "pro": 90,
+        "pro": 200,    # Increased to be higher than Entry
         "unlimited": 999999
     }
     return plan_limits.get(plan.lower(), 16)  # Default to 16 if unknown
@@ -281,8 +281,8 @@ def _handle_subscription_updated(subscription):
         update_data["subscription.has_unlimited_promo"] = False
         update_data["subscription.unlimited_promo_id"] = None
         # Reset to free plan limits
-        update_data["usage.points_total_limit"] = 10
-        update_data["usage.points_balance"] = 10
+        update_data["usage.points_total_limit"] = 16
+        update_data["usage.points_balance"] = 16
 
     db.users.update_one(
         {"subscription.stripe_customer_id": customer_id},

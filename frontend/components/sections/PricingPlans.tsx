@@ -74,7 +74,7 @@ export default function PricingPlans() {
           </div>
 
           {/* cards */}
-          <div className="mx-auto mt-10 grid max-w-[1400px] gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mx-auto mt-10 grid max-w-[1400px] gap-6 sm:grid-cols-2 lg:grid-cols-2">
             <PriceCard
               badge="For Starters"
               title="Free"
@@ -85,7 +85,7 @@ export default function PricingPlans() {
               features={[
                 "1 account connected",
                 "Scheduling included",
-                "10 videos/month included",
+                "16 videos/month included",
                 "Pay-as-you-go after limit",
               ]}
               variant="light"
@@ -95,20 +95,24 @@ export default function PricingPlans() {
             <PriceCard
               badge="For Growing"
               title="Entry"
-              monthlyPrice="$29"
-              yearlyPrice="$290"
-              yearlySavings="$58"
+              monthlyPrice="$19"
+              yearlyPrice="$190"
+              yearlySavings="$38"
               isYearly={isYearly}
               features={[
                 "3 accounts connected",
                 "Scheduling included",
-                "30 videos/month included",
+                "100 videos/month included",
                 "Pay-as-you-go after limit",
               ]}
               variant="light"
               stripeUrl="https://buy.stripe.com/3cI14m9bx2afd8Uf88dAk02"
+              prominent
+              highlighted
             />
 
+            {/* Pro and Custom plans hidden from landing page */}
+            {/*
             <PriceCard
               badge="For Professionals"
               title="Pro"
@@ -119,12 +123,10 @@ export default function PricingPlans() {
               features={[
                 "10 accounts connected",
                 "Scheduling included",
-                "90 videos/month included",
+                "200 videos/month included",
                 "Pay-as-you-go after limit",
               ]}
               variant="light"
-              prominent
-              highlighted
               stripeUrl="https://buy.stripe.com/bJe4gy9bx4inb0M3pqdAk03"
             />
 
@@ -143,6 +145,7 @@ export default function PricingPlans() {
               ]}
               variant="light"
             />
+            */}
           </div>
 
           {/* Pay-as-you-go note */}

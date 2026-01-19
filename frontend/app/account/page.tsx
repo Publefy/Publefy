@@ -266,7 +266,8 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
     try {
       const response: any = await apiServiceDefault.post("/billing/create-portal-session", {});
       if (response?.url) {
-        window.location.href = response.url;
+        // Open Stripe billing portal in a new tab as requested
+        window.open(response.url, "_blank");
       }
     } catch (error) {
       console.error("Failed to create portal session", error);
@@ -330,21 +331,24 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
             currentPlan={currentPlan}
             onUpgrade={handleUpgrade}
           />
-          <PlanRow
-            name="Pro"
-            price="$99/mo"
-            priceId={PLAN_PRICE_IDS.pro}
-            isCurrent={currentPlan === "pro"}
-            currentPlan={currentPlan}
-            onUpgrade={handleUpgrade}
-          />
-          <PlanRow
-            name="Custom"
-            price="Talk to Sales"
-            isCurrent={currentPlan === "custom"}
-            currentPlan={currentPlan}
-            onUpgrade={(name) => window.open("https://calendar.app.google/PPFeknvdixs6ANhw7", "_blank")}
-          />
+          {/* Pro and Custom plans kept in DOM but hidden in UI */}
+          <div className="hidden">
+            <PlanRow
+              name="Pro"
+              price="$99/mo"
+              priceId={PLAN_PRICE_IDS.pro}
+              isCurrent={currentPlan === "pro"}
+              currentPlan={currentPlan}
+              onUpgrade={handleUpgrade}
+            />
+            <PlanRow
+              name="Custom"
+              price="Talk to Sales"
+              isCurrent={currentPlan === "custom"}
+              currentPlan={currentPlan}
+              onUpgrade={(name) => window.open("https://calendar.app.google/PPFeknvdixs6ANhw7", "_blank")}
+            />
+          </div>
         </div>
       </section>
 
@@ -360,7 +364,7 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
             variant="outline"
             size="sm"
             className="border-[#E5E7EB] text-[#374151] font-semibold text-xs h-8 px-4 rounded hover:bg-white shadow-sm"
-            onClick={() => setIsBillingModalOpen(true)}
+            onClick={handlePortalSession}
           >
             Details
           </Button>

@@ -816,8 +816,43 @@ def delete_scheduled_post_endpoint(post_id):
             return jsonify({"error": "Not allowed"}), 403
 
         media_id = (post.get("media_id") or "").strip()
-        if media_id:
-            _delete_instagram_media(media_id, profile.get("access_token"))
+        post_status = (post.get("status") or "").lower()
+        
+        # Instagram API doesn't support deleting published posts
+        # Only attempt Instagram deletion if post is NOT published yet
+        published_statuses = {"published", "live", "success"}
+        is_published = post_status in published_statuses
+        
+        if media_id and not is_published:
+            # Post is scheduled/pending - can delete from Instagram
+            success, error_msg = _delete_instagram_media(media_id, profile.get("access_token"))
+            if not success:
+                logger.warning(
+                    "Failed to delete scheduled Instagram media %s for post %s: %s",
+                    media_id,
+                    post_id,
+                    error_msg
+                )
+        elif is_published and media_id:
+            # Post is published - cannot delete via API, must be done manually
+            logger.info(
+                "Post %s is published (status: %s). Instagram API doesn't support deleting published posts. "
+                "User must delete manually from Instagram app.",
+                post_id,
+                post_status
+            )
+            # Still delete from local database, but don't attempt Instagram deletion
+        elif media_id:
+            # Post has media_id but unknown status - try to delete anyway
+            success, error_msg = _delete_instagram_media(media_id, profile.get("access_token"))
+            if not success:
+                logger.warning(
+                    "Failed to delete Instagram media %s for post %s (status: %s): %s",
+                    media_id,
+                    post_id,
+                    post_status,
+                    error_msg
+                )
 
         try:
             effective_id = post.get("id") or str(post.get("_id"))
@@ -849,8 +884,30 @@ def delete_all_scheduled_posts_endpoint():
             for post in db.posts.find({"profile_id": {"$in": profile_ids}}):
                 profile_id = str(post.get("profile_id", ""))
                 media_id = (post.get("media_id") or "").strip()
-                if media_id and profile_id in token_map:
-                    _delete_instagram_media(media_id, token_map.get(profile_id))
+                post_status = (post.get("status") or "").lower()
+                
+                # Instagram API doesn't support deleting published posts
+                # Only attempt Instagram deletion if post is NOT published yet
+                published_statuses = {"published", "live", "success"}
+                is_published = post_status in published_statuses
+                
+                if media_id and not is_published and profile_id in token_map:
+                    # Post is scheduled/pending - can delete from Instagram
+                    success, error_msg = _delete_instagram_media(media_id, token_map.get(profile_id))
+                    if not success:
+                        logger.warning(
+                            "Failed to delete scheduled Instagram media %s for post %s: %s",
+                            media_id,
+                            post.get("id") or str(post.get("_id")),
+                            error_msg
+                        )
+                elif is_published and media_id:
+                    # Post is published - cannot delete via API
+                    logger.info(
+                        "Post %s is published (status: %s). Skipping Instagram deletion (API doesn't support it).",
+                        post.get("id") or str(post.get("_id")),
+                        post_status
+                    )
 
         db.posts.delete_many({"profile_id": {"$in": profile_ids}})
         return jsonify({"message": "All scheduled posts have been deleted"}), 200

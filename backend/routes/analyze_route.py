@@ -18,12 +18,14 @@ import os
 import re
 import shutil
 import mimetypes
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from bson import ObjectId
 from google import genai
 from google.genai import types
 from google.auth import default as google_auth_default
 from core.gemini_funny_comment_generator import generate_meme_captions
+from auth.dependencies import login_required
+from database import db
 
 # --- Sentry ---
 import sentry_sdk
@@ -32,10 +34,45 @@ analyze_blueprint = Blueprint("analyze", __name__, url_prefix="/video")
 
 @analyze_blueprint.route("/analyze", methods=["POST"])
 @analyze_blueprint.route("/analyze/", methods=["POST"])
+@login_required
 def analyze_video():
     if "file" not in request.files:
         sentry_sdk.capture_message("Analyze: Missing video!", level="warning")  # --- Sentry ---
         return jsonify({"error": "Missing video!"}), 400
+
+    # --- Points Check: Verify user has enough points BEFORE starting generation ---
+    try:
+        user_id = str(g.current_user["_id"])
+        user_doc = db.users.find_one({"_id": ObjectId(user_id)})
+        if not user_doc:
+            return jsonify({"error": "User not found"}), 404
+        
+        usage = user_doc.get("usage")
+        
+        # Lazy initialization for existing users missing usage field
+        if not usage:
+            usage = {
+                "points_balance": 16,
+                "points_total_limit": 16,
+                "points_used": 0,
+                "total_videos_generated": 0
+            }
+            db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
+        
+        balance = usage.get("points_balance", 0)
+        
+        # Analysis costs 1 point
+        required_points = 1
+        if balance < required_points:
+            return jsonify({
+                "error": "insufficient_points",
+                "message": f"You don't have enough points to analyze this video. You need {required_points} point but only have {balance} points remaining. Please upgrade your plan to get more points.",
+                "points_balance": balance,
+                "points_required": required_points
+            }), 403
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        return jsonify({"error": "Failed to check points balance"}), 500
 
     file = request.files["file"]
     _, ext = os.path.splitext(file.filename)

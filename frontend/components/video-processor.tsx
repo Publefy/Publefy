@@ -94,7 +94,13 @@ export function VideoProcessor({
       setAnalyzeProgress(100);
       setTimeout(() => setAnalyzing(false), 600);
       setTimeout(() => setAnalyzeProgress(0), 1000);
-      alert("Analyze failed: " + err.message);
+      
+      // Check for insufficient points
+      if (err?.response?.data?.error === "insufficient_points" || err?.response?.data?.message?.includes("don't have enough points")) {
+        alert(err?.response?.data?.message || "You don't have enough points to analyze this video. Please upgrade your plan to get more points.");
+      } else {
+        alert("Analyze failed: " + err.message);
+      }
     }
   };
 

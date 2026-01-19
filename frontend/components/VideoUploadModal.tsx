@@ -152,7 +152,17 @@ export function VideoUploadModal({
             setAnalyzeProgress(100);
             setTimeout(() => setAnalyzing(false), 600);
             setTimeout(() => setAnalyzeProgress(0), 1000);
-            toast({ title: "Analyze failed", description: err?.message || "Error", variant: "destructive" });
+            
+            // Check for insufficient points
+            if (err?.response?.data?.error === "insufficient_points" || err?.response?.data?.message?.includes("don't have enough points")) {
+                toast({ 
+                    title: "Not Enough Points", 
+                    description: err?.response?.data?.message || "You don't have enough points to analyze this video. Please upgrade your plan to get more points.",
+                    variant: "default"
+                });
+            } else {
+                toast({ title: "Analyze failed", description: err?.message || "Error", variant: "destructive" });
+            }
         }
     };
 

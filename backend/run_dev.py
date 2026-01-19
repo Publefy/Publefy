@@ -15,7 +15,7 @@ os.environ.setdefault("PORT", "8000")
 
 # Import and run the Flask app directly
 if __name__ == "__main__":
-    from main import app
+    from main import flask_app
     
     port = int(os.getenv("PORT", "8000"))
     debug = os.getenv("FLASK_DEBUG") == "1"
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print(f"Starting development server on http://127.0.0.1:{port}")
     print(f"Debug mode: {debug}")
     
-    app.run(host="127.0.0.1", port=port, debug=debug)
+    flask_app.run(host="127.0.0.1", port=port, debug=debug)
 
 
 

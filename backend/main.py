@@ -48,12 +48,46 @@ def create_app():
         origins=[
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
             "https://publefy.com",
             "https://www.publefy.com",
         ],
         allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
         methods=["GET", "POST", "DELETE", "PATCH", "OPTIONS", "PUT"]
     )
+    
+    # Ensure CORS headers are always present, even on errors
+    @app.after_request
+    def after_request(response):
+        origin = request.headers.get('Origin')
+        allowed_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+            "https://publefy.com",
+            "https://www.publefy.com",
+        ]
+        
+        # If origin is in allowed list, use it; otherwise allow all for errors
+        if origin and origin in allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        elif not response.headers.get("Access-Control-Allow-Origin"):
+            # Fallback: allow the requesting origin if not already set
+            if origin:
+                response.headers["Access-Control-Allow-Origin"] = origin
+            else:
+                response.headers["Access-Control-Allow-Origin"] = "*"
+        
+        # Ensure other CORS headers are present
+        if not response.headers.get("Access-Control-Allow-Methods"):
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, PATCH, OPTIONS, PUT"
+        if not response.headers.get("Access-Control-Allow-Headers"):
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, Origin, X-Requested-With"
+        
+        return response
     # ----------------------------------------------------------------
 
     # ---- Swagger (Flasgger) ----------------------------------------
@@ -123,18 +157,67 @@ def create_app():
     # ----------------------------------------------------------------
 
     # ---- Global error handlers with CORS ---------------------------
+    from werkzeug.exceptions import HTTPException
+    
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(e):
+        """Handle all HTTP exceptions with CORS headers"""
+        response = jsonify({"error": str(e.description), "message": str(e.description)})
+        response.status_code = e.code
+        # Add CORS headers
+        origin = request.headers.get('Origin')
+        if origin and origin in [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+            "https://publefy.com",
+            "https://www.publefy.com",
+        ]:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        else:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, PATCH, OPTIONS, PUT"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, Origin, X-Requested-With"
+        return response
+
     @app.errorhandler(404)
     def not_found(error):
         response = jsonify({"error": "Not found"})
         response.status_code = 404
-        response.headers["Access-Control-Allow-Origin"] = "*"
+        origin = request.headers.get('Origin')
+        if origin and origin in [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+            "https://publefy.com",
+            "https://www.publefy.com",
+        ]:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        else:
+            response.headers["Access-Control-Allow-Origin"] = "*"
         return response
 
     @app.errorhandler(500)
     def internal_error(error):
         response = jsonify({"error": "Internal server error"})
         response.status_code = 500
-        response.headers["Access-Control-Allow-Origin"] = "*"
+        origin = request.headers.get('Origin')
+        if origin and origin in [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+            "https://publefy.com",
+            "https://www.publefy.com",
+        ]:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        else:
+            response.headers["Access-Control-Allow-Origin"] = "*"
         return response
     # ----------------------------------------------------------------
 

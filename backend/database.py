@@ -13,9 +13,9 @@ if not MONGO_URI:
 try:
     client = MongoClient(MONGO_URI, server_api=ServerApi("1"))
     client.admin.command("ping")
-    print("✅ Connected to MongoDB")
+    print("[OK] Connected to MongoDB")
 except Exception as e:
-    print("❌ MongoDB Connection Error:", e)
+    print("[ERROR] MongoDB Connection Error:", e)
     # Create a lazy client anyway; operations will fail at call site, but ASGI can start
     client = MongoClient(MONGO_URI, server_api=ServerApi("1"))
 

@@ -47,8 +47,8 @@ interface UserProfile {
 }
 
 const PLAN_PRICE_IDS: Record<string, string> = {
-  free: "free",
-  entry: "price_1Sr9JQBDn5DFVH5Z9IRJRaOd",
+  free: "price_1SpLlfB7l4Z4dfAwJoBZ5cXE",
+  entry: "price_1Sq9lCB7l4Z4dfAwbon53vpu",
   pro: "price_1Sr9LhBDn5DFVH5ZCwMgpsqh",
 };
 

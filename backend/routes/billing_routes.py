@@ -29,8 +29,9 @@ def create_checkout_session():
         
     user = g.current_user
     
-    # Check if user already has a Stripe Customer ID
-    stripe_customer_id = user.get("subscription", {}).get("stripe_customer_id")
+    # Safely check if user already has a Stripe Customer ID
+    sub_info = user.get("subscription") or {}
+    stripe_customer_id = sub_info.get("stripe_customer_id")
     
     if not stripe.api_key:
         logger.error("STRIPE_SECRET_KEY is not set in environment variables")
@@ -63,7 +64,8 @@ def create_checkout_session():
         return jsonify({"url": session.url})
     except Exception as e:
         logger.error(f"Error creating checkout session: {str(e)}")
-        return jsonify({"error": "Could not create checkout session"}), 500
+        # Return the actual error message so we can debug in the browser
+        return jsonify({"error": str(e)}), 500
 
 @billing_blueprint.route("/create-portal-session", methods=["POST"])
 @login_required

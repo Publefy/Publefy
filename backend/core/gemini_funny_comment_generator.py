@@ -2,6 +2,7 @@ from google import genai
 from google.genai import types
 from google.auth import default as google_auth_default
 import re
+import os
 
 
 def generate_meme_captions(

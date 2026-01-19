@@ -1694,34 +1694,8 @@ def regen_at_from_bank():
         return jsonify({"error": "Unauthorized"}), 401
     user_id = user["_id"]
 
-    # --- Points System: Check Balance ---
-    user_doc = db.users.find_one({"_id": ObjectId(user_id)})
-    if not user_doc:
-        return jsonify({"error": "User not found"}), 404
-    
-    # --- Points System: Check Balance (skip for unlimited plan) ---
-    if not _is_unlimited_plan(user_id):
-        usage = user_doc.get("usage")
-        
-        # Lazy initialization for existing users missing usage field
-        if not usage:
-            usage = {
-                "points_balance": 16,
-                "points_total_limit": 16,
-                "points_used": 0,
-                "total_videos_generated": 0
-            }
-            db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
-        
-        balance = usage.get("points_balance", 0)
-        
-        # Each regeneration costs 1 point
-        if balance < 1:
-            return jsonify({
-                "error": "Insufficient points",
-                "message": "You need at least 1 point to regenerate a video. Please upgrade to Pro."
-            }), 403
-    # -----------------------------------
+    # Regeneration is now FREE - no points deduction needed
+    # (Points check removed - regeneration is free for all users)
 
     watermark = _should_watermark(user_id) if user_id else True
     used_fps: set[str] = set()
@@ -1776,19 +1750,7 @@ def regen_at_from_bank():
     rng.shuffle(candidates)
     pick, fp = candidates[0]
 
-    # --- Points System: Deduct 1 Point (skip for unlimited plan) ---
-    if not _is_unlimited_plan(user_id):
-        db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {
-                "$inc": {
-                    "usage.points_balance": -1,
-                    "usage.points_used": 1
-                },
-                "$set": {"updated_at": _now_iso()}
-            }
-        )
-    # -------------------------------------
+    # Regeneration is FREE - no points deducted
 
     # format response item
     name = pick.name

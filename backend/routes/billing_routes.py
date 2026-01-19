@@ -14,6 +14,16 @@ billing_blueprint = Blueprint("billing", __name__, url_prefix="/billing")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
+def _get_points_limit_for_plan(plan: str) -> int:
+    """Get points limit based on subscription plan"""
+    plan_limits = {
+        "free": 10,
+        "entry": 100,  # Updated to 100
+        "pro": 90,
+        "unlimited": 999999
+    }
+    return plan_limits.get(plan.lower(), 16)  # Default to 16 if unknown
+
 @billing_blueprint.route("/create-checkout-session", methods=["POST"])
 @login_required
 def create_checkout_session():
@@ -194,22 +204,37 @@ def _handle_checkout_session(session):
             logger.error(f"Error checking promo code: {str(e)}")
 
     if user_id and customer_id and subscription_id:
+        # Get points limit for this plan
+        points_limit = _get_points_limit_for_plan(plan)
+        
+        # Get current user to check existing balance
+        user_doc = db.users.find_one({"_id": ObjectId(user_id)})
+        current_balance = 0
+        if user_doc and user_doc.get("usage"):
+            current_balance = user_doc.get("usage", {}).get("points_balance", 0)
+        
+        # Set new balance to the plan limit (reset monthly)
         update_data = {
             "subscription.stripe_customer_id": customer_id,
             "subscription.stripe_subscription_id": subscription_id,
             "subscription.plan": plan,
             "subscription.status": "active",
-            "subscription.last_updated": datetime.utcnow()
+            "subscription.last_updated": datetime.utcnow(),
+            "usage.points_total_limit": points_limit,
+            "usage.points_balance": points_limit  # Reset balance to limit on subscription
         }
         
         if has_unlimited_promo:
             update_data["subscription.has_unlimited_promo"] = True
             update_data["subscription.unlimited_promo_id"] = "promo_1SrJ9rB7l4Z4dfAwdAO1OdBp"
+            update_data["usage.points_total_limit"] = 999999
+            update_data["usage.points_balance"] = 999999
         
         db.users.update_one(
             {"_id": ObjectId(user_id)},
             {"$set": update_data}
         )
+        logger.info(f"Updated user {user_id} to plan {plan} with {points_limit} points")
 
 def _handle_subscription_updated(subscription):
     customer_id = subscription.get('customer')
@@ -239,14 +264,25 @@ def _handle_subscription_updated(subscription):
     
     if plan:
         update_data["subscription.plan"] = plan
+        # Update points limit if plan changed
+        points_limit = _get_points_limit_for_plan(plan)
+        update_data["usage.points_total_limit"] = points_limit
+        # Only reset balance if status is active and plan is upgrading
+        if status == "active":
+            update_data["usage.points_balance"] = points_limit
     
     if has_unlimited_promo:
         update_data["subscription.has_unlimited_promo"] = True
         update_data["subscription.unlimited_promo_id"] = "promo_1SrJ9rB7l4Z4dfAwdAO1OdBp"
+        update_data["usage.points_total_limit"] = 999999
+        update_data["usage.points_balance"] = 999999
     elif status in ("canceled", "unpaid", "past_due"):
         # Clear promo flag if subscription is canceled/unpaid
         update_data["subscription.has_unlimited_promo"] = False
         update_data["subscription.unlimited_promo_id"] = None
+        # Reset to free plan limits
+        update_data["usage.points_total_limit"] = 10
+        update_data["usage.points_balance"] = 10
 
     db.users.update_one(
         {"subscription.stripe_customer_id": customer_id},

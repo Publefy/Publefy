@@ -990,6 +990,10 @@ export function CalendarView({
     const src = getVideoSrc(post as any)
     if (!thumb && !src) return null
 
+    // Get video duration from videoItems if available
+    const videoMatch = videoItems.find((x) => x.id === post.reel_id)
+    const videoDuration = (videoMatch as any)?.duration || (videoMatch as any)?.video_duration || ""
+
     if (compact) {
       return (
         <div
@@ -1036,28 +1040,34 @@ export function CalendarView({
           <TooltipTrigger asChild>
             <div
               className={cn(
-                "m-0 p-0.5 relative group cursor-pointer rounded shadow-sm hover:shadow-md transition-all duration-200",
+                "m-0 relative group cursor-pointer rounded-md shadow-sm hover:shadow-md transition-all duration-200 border-2 border-transparent hover:border-[#7C7EF4]",
                 dragOver && "pointer-events-none"
               )}
               onClick={onClick}
               draggable
               onDragStart={onDragStart}
             >
-              <div className="relative w-6 h-[24px] mx-auto rounded overflow-hidden">
+              <div className="relative w-[20px] h-[20px] rounded overflow-hidden bg-slate-900">
                 {thumb ? (
                   <img src={thumb} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white text-[8px]">
-                    <Film className="h-2 w-2" />
+                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
+                    <Film className="h-2.5 w-2.5" />
                   </div>
                 )}
-                <div className="px-0.5 flex justify-between w-full absolute bottom-0.5 left-0">
-                  <CircleCheck className="h-2 w-2 text-white drop-shadow-md" />
-                  <SquarePlay className="h-2 w-2 text-white drop-shadow-md" />
+                {/* Duration overlay - top left */}
+                {videoDuration && (
+                  <div className="absolute top-0 left-0 bg-black/70 px-0.5 py-0 text-[6px] text-white font-medium leading-tight">
+                    {videoDuration}
+                  </div>
+                )}
+                {/* Play icon - bottom right */}
+                <div className="absolute bottom-0 right-0 p-0.5">
+                  <SquarePlay className="h-1.5 w-1.5 text-white drop-shadow-lg" />
                 </div>
               </div>
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/20 rounded transition-opacity duration-200">
-                <Pencil className="h-4 w-4 text-white drop-shadow-md" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/30 rounded transition-opacity duration-200 pointer-events-none">
+                <Pencil className="h-2.5 w-2.5 text-white drop-shadow-md" />
               </div>
             </div>
           </TooltipTrigger>

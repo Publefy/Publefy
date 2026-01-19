@@ -1,5 +1,5 @@
 
-from flask import Blueprint, request, jsonify, redirect, session, current_app
+from flask import Blueprint, request, jsonify, redirect, session, current_app, g
 from werkzeug.exceptions import BadRequest, Unauthorized
 from models.user import UserCreate
 from auth.auth_handler import hash_password, verify_password, create_access_token

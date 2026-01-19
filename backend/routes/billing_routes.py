@@ -32,6 +32,10 @@ def create_checkout_session():
     # Check if user already has a Stripe Customer ID
     stripe_customer_id = user.get("subscription", {}).get("stripe_customer_id")
     
+    if not stripe.api_key:
+        logger.error("STRIPE_SECRET_KEY is not set in environment variables")
+        return jsonify({"error": "Billing service misconfigured (missing API key)"}), 500
+
     try:
         checkout_params = {
             'payment_method_types': ['card'],

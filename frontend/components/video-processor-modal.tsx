@@ -837,6 +837,40 @@ export function VideoProcessorModal({
       return;
     }
 
+    // Check points BEFORE starting generation
+    try {
+      const userData = await apiServiceDefault.get<any>("/auth/me");
+      const subscription = userData?.subscription || {};
+      const usage = userData?.usage || {};
+      
+      // Check if user has unlimited plan
+      const isUnlimited = subscription?.plan?.toLowerCase() === "unlimited" || 
+                          subscription?.has_unlimited_promo === true;
+      
+      if (!isUnlimited) {
+        const pointsBalance = usage?.points_balance || 0;
+        const count = 5; // Number of memes to generate
+        
+        if (pointsBalance < count) {
+          // Show error dialog and route to pricing
+          toast({
+            title: "Insufficient Points",
+            description: `You need ${count} points but only have ${pointsBalance}. Please upgrade your plan to get more points.`,
+            variant: "destructive",
+          });
+          
+          // Route to account/pricing page after a short delay
+          setTimeout(() => {
+            router.push("/account");
+          }, 1500);
+          return;
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to check points:", err);
+      // Continue anyway - backend will catch it
+    }
+
     setIsGeneratingMemes(true);
     startFakeProgress(averageGenerationMs || 45_000);
     setSelectedMemes(new Set());
@@ -942,13 +976,28 @@ export function VideoProcessorModal({
     } catch (err: any) {
       const isTimeout = err?.code === "ECONNABORTED";
       console.error("[generate-memes] error:", err);
-      toast({
-        title: isTimeout ? "Still processing…" : "Error",
-        description: isTimeout
-          ? "The server is still rendering videos. Increase timeout or switch to a job + polling flow."
-          : (err?.response?.data?.error || err?.message || "Could not auto-generate memes."),
-        variant: "destructive",
-      });
+      
+      // Check for insufficient points error from backend
+      if (err?.response?.data?.error === "Insufficient points" || 
+          (err?.response?.data?.message && err?.response?.data?.message.includes("points"))) {
+        toast({
+          title: "Insufficient Points",
+          description: err?.response?.data?.message || "You don't have enough points. Please upgrade your plan.",
+          variant: "destructive",
+        });
+        // Route to pricing page
+        setTimeout(() => {
+          router.push("/account");
+        }, 1500);
+      } else {
+        toast({
+          title: isTimeout ? "Still processing…" : "Error",
+          description: isTimeout
+            ? "The server is still rendering videos. Increase timeout or switch to a job + polling flow."
+            : (err?.response?.data?.error || err?.message || "Could not auto-generate memes."),
+          variant: "destructive",
+        });
+      }
     } finally {
       const duration = generationStartRef.current ? Date.now() - generationStartRef.current : null;
       const finish = () => {

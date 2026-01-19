@@ -22,8 +22,8 @@ GRAPH_API_URL = "https://graph.facebook.com/v23.0"
 # Google
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_LOGIN_REDIRECT_URI = "https://publefy-484406.us-central1.run.app/auth/google/callback"
-GOOGLE_LOGIN_REDIRECT_URI_LOCAL = "http://127.0.0.1:8000/auth/google/callback"
+GOOGLE_LOGIN_REDIRECT_URI = os.getenv("GOOGLE_LOGIN_REDIRECT_URI", "https://publefy-1020068343725.us-central1.run.app/auth/google/callback")
+GOOGLE_LOGIN_REDIRECT_URI_LOCAL = os.getenv("GOOGLE_LOGIN_REDIRECT_URI_LOCAL", "http://127.0.0.1:8000/auth/google/callback")
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"

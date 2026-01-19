@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { apiServiceDefault } from "@/services/api/api-service";
-import { axiosConfig } from "@/services/api/apiConfig";
+import { axiosConfig, API_BASE } from "@/services/api/apiConfig";
 import { googleAuthService } from "@/services/api/google-auth-service";
 import { AnimatePresence, motion } from "framer-motion";
 import { saveAuthMethod } from "@/utils/auth-method";
@@ -332,7 +332,7 @@ export default function LoginPage({ onLogin }: { onLogin?: () => void }) {
   const handleGoogle = async () => {
     setError(null);
     try {
-      googleAuthService.setBaseUrl(API_ORIGIN || 'https://publefy-1020068343725.us-central1.run.app/');
+      googleAuthService.setBaseUrl(API_ORIGIN || API_BASE);
       await googleAuthService.initiateGoogleAuthAndRedirect();
     } catch (error: any) {
       console.error('❌ Ошибка Google OAuth в LoginPage:', error);

@@ -108,24 +108,19 @@ def stripe_webhook():
     sig_header = request.headers.get("Stripe-Signature")
 
     if not webhook_secret:
-        logger.error("STRIPE_WEBHOOK_SECRET not set")
         return jsonify({"error": "Webhook secret not configured"}), 500
 
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, webhook_secret
         )
-    except ValueError as e:
-        # Invalid payload
+    except ValueError:
         return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
+    except stripe.error.SignatureVerificationError:
         return jsonify({"error": "Invalid signature"}), 400
 
     event_type = event['type']
     data_object = event['data']['object']
-
-    logger.info(f"Handling Stripe event: {event_type}")
 
     if event_type == 'checkout.session.completed':
         _handle_checkout_session(data_object)
@@ -142,30 +137,47 @@ def _handle_checkout_session(session):
     user_id = session.get('client_reference_id')
     customer_id = session.get('customer')
     subscription_id = session.get('subscription')
-    
-    # Plan info from metadata (you should send this when creating checkout session)
     plan = session.get('metadata', {}).get('plan', 'entry')
 
     if not user_id:
-        # Fallback to email lookup if client_reference_id is missing
         email = session.get('customer_details', {}).get('email')
         if email:
             user = db.users.find_one({"email": email})
             if user:
                 user_id = str(user["_id"])
 
-    if user_id:
+    # Check for unlimited promo code
+    has_unlimited_promo = False
+    if subscription_id:
+        try:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            discount = subscription.get('discount')
+            if discount:
+                promo_code_obj = discount.get('promotion_code')
+                if promo_code_obj:
+                    promo_id = promo_code_obj if isinstance(promo_code_obj, str) else promo_code_obj.get('id', '')
+                    if promo_id == 'promo_1SrJ9rB7l4Z4dfAwdAO1OdBp':
+                        has_unlimited_promo = True
+        except Exception as e:
+            logger.error(f"Error checking promo code: {str(e)}")
+
+    if user_id and customer_id and subscription_id:
+        update_data = {
+            "subscription.stripe_customer_id": customer_id,
+            "subscription.stripe_subscription_id": subscription_id,
+            "subscription.plan": plan,
+            "subscription.status": "active",
+            "subscription.last_updated": datetime.utcnow()
+        }
+        
+        if has_unlimited_promo:
+            update_data["subscription.has_unlimited_promo"] = True
+            update_data["subscription.unlimited_promo_id"] = "promo_1SrJ9rB7l4Z4dfAwdAO1OdBp"
+        
         db.users.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {
-                "subscription.stripe_customer_id": customer_id,
-                "subscription.stripe_subscription_id": subscription_id,
-                "subscription.plan": plan,
-                "subscription.status": "active",
-                "subscription.last_updated": datetime.utcnow()
-            }}
+            {"$set": update_data}
         )
-        logger.info(f"Updated user {user_id} with subscription {subscription_id}")
 
 def _handle_subscription_updated(subscription):
     customer_id = subscription.get('customer')
@@ -176,6 +188,16 @@ def _handle_subscription_updated(subscription):
     # Try to get plan from metadata of subscription or items
     plan = subscription.get('metadata', {}).get('plan')
     
+    # Check for unlimited promo code
+    has_unlimited_promo = False
+    discount = subscription.get('discount')
+    if discount:
+        promo_code_obj = discount.get('promotion_code')
+        if promo_code_obj:
+            promo_id = promo_code_obj if isinstance(promo_code_obj, str) else promo_code_obj.get('id', '')
+            if promo_id == 'promo_1SrJ9rB7l4Z4dfAwdAO1OdBp':
+                has_unlimited_promo = True
+    
     update_data = {
         "subscription.status": status,
         "subscription.cancel_at_period_end": cancel_at_period_end,
@@ -185,6 +207,14 @@ def _handle_subscription_updated(subscription):
     
     if plan:
         update_data["subscription.plan"] = plan
+    
+    if has_unlimited_promo:
+        update_data["subscription.has_unlimited_promo"] = True
+        update_data["subscription.unlimited_promo_id"] = "promo_1SrJ9rB7l4Z4dfAwdAO1OdBp"
+    elif status in ("canceled", "unpaid", "past_due"):
+        # Clear promo flag if subscription is canceled/unpaid
+        update_data["subscription.has_unlimited_promo"] = False
+        update_data["subscription.unlimited_promo_id"] = None
 
     db.users.update_one(
         {"subscription.stripe_customer_id": customer_id},

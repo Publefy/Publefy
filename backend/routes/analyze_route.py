@@ -47,10 +47,11 @@ def analyze_video():
         if not user_doc:
             return jsonify({"error": "User not found"}), 404
         
-        # Check if user has unlimited plan
+        # Check if user has unlimited plan or promo code
         sub = user_doc.get("subscription", {})
         plan = (sub.get("plan") or user_doc.get("plan") or "free").lower()
-        is_unlimited = plan == "unlimited"
+        has_unlimited_promo = sub.get("has_unlimited_promo") or sub.get("unlimited_promo_id") == "promo_1SrJ9rB7l4Z4dfAwdAO1OdBp"
+        is_unlimited = plan == "unlimited" or has_unlimited_promo
         
         # Skip points check for unlimited plan
         if not is_unlimited:

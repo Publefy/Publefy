@@ -57,12 +57,18 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
   const [loadingProfiles, setLoadingProfiles] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [usage, setUsage] = useState({ points_balance: 0, points_total_limit: 0 });
+  const [user, setUser] = useState<any>(null);
 
   const fetchUsage = useCallback(async () => {
     try {
       const data = await apiServiceDefault.get<any>("/auth/me");
-      if (data && data.usage) {
-        setUsage(data.usage);
+      if (data) {
+        if (data.usage) {
+          setUsage(data.usage);
+        }
+        if (data.subscription) {
+          setUser({ subscription: data.subscription });
+        }
       }
     } catch (error) {
       console.error("Failed to fetch usage:", error);
@@ -632,7 +638,17 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
           {/* Sidebar Bottom Section */}
           <div className="p-3 border-t border-[#E7E5F7]/40 space-y-1">
             {/* Points Usage Bar */}
-            {usage.points_total_limit > 0 && (
+            {user?.subscription?.has_unlimited_promo ? (
+              <div className="px-3 py-2 mb-2 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-[10px] font-bold text-[#301B69]/60 uppercase tracking-tight">Credits</span>
+                  <span className="text-[11px] font-semibold text-[#301B69]">UNLIMITED</span>
+                </div>
+                <div className="h-1.5 w-full bg-[#E7E5F7] rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-[#7C7EF4] to-[#6F80F0]" style={{ width: '100%' }} />
+                </div>
+              </div>
+            ) : usage.points_total_limit > 0 ? (
               <div className="px-3 py-2 mb-2 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm">
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-[10px] font-bold text-[#301B69]/60 uppercase tracking-tight">Credits</span>
@@ -645,7 +661,7 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
                   />
                 </div>
               </div>
-            )}
+            ) : null}
 
             <button
               onClick={() => router.push("/account")}

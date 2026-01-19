@@ -679,6 +679,21 @@ def _get_user_plan(user_id: str) -> str:
 
 def _is_unlimited_plan(user_id: str) -> bool:
     """Check if user has unlimited plan (bypasses all restrictions)"""
+    from bson import ObjectId
+    try:
+        user = db.users.find_one({"_id": ObjectId(user_id)}, {"subscription": 1}) or {}
+    except Exception:
+        user = db.users.find_one({"_id": user_id}, {"subscription": 1}) or {}
+    
+    sub = user.get("subscription")
+    if sub and isinstance(sub, dict):
+        # Check for unlimited promo code
+        if sub.get("has_unlimited_promo") or sub.get("unlimited_promo_id") == "promo_1SrJ9rB7l4Z4dfAwdAO1OdBp":
+            return True
+        # Check for unlimited plan
+        if sub.get("status") in ("active", "trialing") and sub.get("plan", "").lower() == "unlimited":
+            return True
+    
     plan = _get_user_plan(user_id)
     return plan == "unlimited"
 

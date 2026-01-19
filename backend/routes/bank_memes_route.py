@@ -273,6 +273,11 @@ def _score_prompt(opt: str, industry: str) -> float:
     """Simple ‘best’ heuristic with tiny variety signal."""
     s = opt.lower()
     score = 0.0
+    
+    # NEW: Penalize generic fallback patterns to encourage variety
+    if "logic, but make it fun" in s:
+        score -= 5.0
+    
     # contains an industry token?
     toks = [t for t in re.split(r"[^a-z0-9]+", industry.lower()) if t]
     if any(t in s for t in toks):
@@ -290,7 +295,12 @@ def _score_prompt(opt: str, industry: str) -> float:
 def _pick_best_prompt(options: list[str], industry: str) -> str:
     if not options:
         return "That moment the plan falls apart"
-    ranked = sorted(options, key=lambda o: _score_prompt(o, industry), reverse=True)
+    
+    # Filter out obvious placeholders if we have real options
+    real_options = [o for o in options if "logic, but make it fun" not in o.lower() and "placeholder" not in o.lower()]
+    pool = real_options if real_options else options
+    
+    ranked = sorted(pool, key=lambda o: _score_prompt(o, industry), reverse=True)
     top = ranked[: min(5, len(ranked))]
     rng = random.Random(uuid4().int & ((1 << 31) - 1))
     return rng.choice(top)  # best-ish, with a touch of variety
@@ -299,6 +309,7 @@ def _pick_best_prompt(options: list[str], industry: str) -> str:
 def _fallback_prompts_for(industry: str) -> list[str]:
     """
     Domain-tilted, brand-safe fallbacks when Gemini is unavailable.
+    Ensures unique templates to avoid identical results.
     """
     base_clean = re.sub(r"[^A-Za-z0-9]+", " ", (industry or "general")).strip().lower()
     key = base_clean.split(" ", 1)[0] if base_clean else "general"
@@ -368,21 +379,36 @@ def _fallback_prompts_for(industry: str) -> list[str]:
             "Zoom call interrupted by paws",
         ],
     }
+    
+    generic_templates = [
+        "That moment the plan finally clicks",
+        "POV: The deadline moved itself",
+        "Expectation vs reality in real time",
+        "Me vs the calendar on Monday",
+        "Plot twist during the meeting",
+        "When the solution was right there all along",
+        "Vibing through the chaos",
+        "Acting like I know exactly what's happening",
+        "The universe test my patience again",
+        "Everything is fine, everything is great",
+        "Wait, that actually worked?",
+        "My last two brain cells fighting for third place"
+    ]
+
     if key in {"real", "estate", "real estate"}:
         key = "real"
+    
     pool = pools.get(key, [])
     if not pool:
-        pool = [
-            "When the plan sounds simple until we start",
-            "POV: the deadline moved itself",
-            "Expectation vs reality in real time",
-            "Me vs the calendar on Monday",
-            "Plot twist during the meeting",
-            "That moment the plan finally clicks",
-        ]
-    # Ensure at least 20 options; pad with generic if needed
+        pool = generic_templates[:6]
+    
+    # Ensure at least 20 options with UNIQUE templates
+    idx = 0
     while len(pool) < 20:
-        pool.append(f"{base_clean or 'meme'} logic, but make it fun")
+        template = generic_templates[idx % len(generic_templates)]
+        pool.append(f"{industry or 'Meme'}: {template}")
+        idx += 1
+        
     return pool[:20]
 
 

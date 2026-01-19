@@ -369,6 +369,7 @@ export function VideoProcessorModal({
   profile,
   onOpenChange,
   onVideoGenerated,
+  onUsageUpdate,
   initialFile,
   initialAnalysis,
 }: {

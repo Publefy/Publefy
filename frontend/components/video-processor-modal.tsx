@@ -435,6 +435,10 @@ export function VideoProcessorModal({
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 
+  // Insufficient points modal
+  const [insufficientPointsOpen, setInsufficientPointsOpen] = useState(false);
+  const [pointsInfo, setPointsInfo] = useState<{ balance: number; required: number } | null>(null);
+
   // toggles
   const [allowRepeats, setAllowRepeats] = useState(true);
   const [onePromptForAll, setOnePromptForAll] = useState(false);
@@ -852,17 +856,9 @@ export function VideoProcessorModal({
         const count = 5; // Number of memes to generate
         
         if (pointsBalance < count) {
-          // Show error dialog and route to pricing
-          toast({
-            title: "Insufficient Points",
-            description: `You need ${count} points but only have ${pointsBalance}. Please upgrade your plan to get more points.`,
-            variant: "destructive",
-          });
-          
-          // Route to account/pricing page after a short delay
-          setTimeout(() => {
-            router.push("/account");
-          }, 1500);
+          // Show insufficient points modal
+          setPointsInfo({ balance: pointsBalance, required: count });
+          setInsufficientPointsOpen(true);
           return;
         }
       }
@@ -980,15 +976,15 @@ export function VideoProcessorModal({
       // Check for insufficient points error from backend
       if (err?.response?.data?.error === "Insufficient points" || 
           (err?.response?.data?.message && err?.response?.data?.message.includes("points"))) {
-        toast({
-          title: "Insufficient Points",
-          description: err?.response?.data?.message || "You don't have enough points. Please upgrade your plan.",
-          variant: "destructive",
-        });
-        // Route to pricing page
-        setTimeout(() => {
-          router.push("/account");
-        }, 1500);
+        // Extract points info from error message if available
+        const message = err?.response?.data?.message || "";
+        const requiredMatch = message.match(/need (\d+)/i);
+        const balanceMatch = message.match(/have (\d+)/i);
+        const required = requiredMatch ? parseInt(requiredMatch[1]) : 5;
+        const balance = balanceMatch ? parseInt(balanceMatch[1]) : 0;
+        
+        setPointsInfo({ balance, required });
+        setInsufficientPointsOpen(true);
       } else {
         toast({
           title: isTimeout ? "Still processing…" : "Error",
@@ -1767,6 +1763,56 @@ export function VideoProcessorModal({
             className="w-full max-h-[80vh] rounded-xl shadow-xl"
             crossOrigin="anonymous"
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Insufficient Points Dialog */}
+      <Dialog open={insufficientPointsOpen} onOpenChange={setInsufficientPointsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-[#301B69]">
+              Insufficient Credits
+            </DialogTitle>
+            <DialogDescription className="text-[#5A5192] pt-2">
+              You don't have enough credits to generate memes.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-[#F5F4F9] rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-[#5A5192]">Credits Required:</span>
+                <span className="text-sm font-semibold text-[#301B69]">{pointsInfo?.required || 5}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-[#5A5192]">Your Balance:</span>
+                <span className="text-sm font-semibold text-[#301B69]">{pointsInfo?.balance || 0}</span>
+              </div>
+            </div>
+            
+            <p className="text-sm text-[#5A5192] text-center">
+              Upgrade your plan to get more credits and unlock unlimited meme generation.
+            </p>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setInsufficientPointsOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setInsufficientPointsOpen(false);
+                window.location.href = "https://publefy.com/account";
+              }}
+              className="w-full sm:w-auto bg-gradient-to-b from-[#7C7EF4] to-[#6F80F0] text-white hover:opacity-90"
+            >
+              Upgrade Plan
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Dialog>

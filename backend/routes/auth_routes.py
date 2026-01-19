@@ -184,6 +184,14 @@ def _upsert_user(provider: str, pid: str, name: str, email: str | None, picture:
             "name": name or f"{provider.title()} User",
             "email": email,
             "providers": {provider: {"id": pid, "picture": picture or "", **(provider_extra or {})}},
+            "subscription": {
+                "plan": "free",
+                "status": "active",
+                "stripe_customer_id": None,
+                "stripe_subscription_id": None,
+                "current_period_end": None,
+                "cancel_at_period_end": False
+            },
             "created_at": _now_iso(),
             "updated_at": _now_iso(),
         }
@@ -290,6 +298,15 @@ def register():
 
         user_dict = user.dict()
         user_dict["password"] = hash_password(user.password)
+        # Initialize default subscription
+        user_dict["subscription"] = {
+            "plan": "free",
+            "status": "active",
+            "stripe_customer_id": None,
+            "stripe_subscription_id": None,
+            "current_period_end": None,
+            "cancel_at_period_end": False
+        }
         result = db.users.insert_one(user_dict)
 
         user_dict["_id"] = str(result.inserted_id)

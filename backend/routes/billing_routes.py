@@ -56,7 +56,13 @@ def create_checkout_session():
         
         # If we have a customer ID, use it. Otherwise, use email.
         if stripe_customer_id:
-            checkout_params['customer'] = stripe_customer_id
+            try:
+                # Verify customer still exists in Stripe
+                stripe.Customer.retrieve(stripe_customer_id)
+                checkout_params['customer'] = stripe_customer_id
+            except stripe.error.InvalidRequestError:
+                # If customer doesn't exist in this Stripe account, fallback to email
+                checkout_params['customer_email'] = user.get("email")
         else:
             checkout_params['customer_email'] = user.get("email")
 

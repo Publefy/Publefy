@@ -373,7 +373,7 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
           />
           <PlanRow
             name="Entry"
-            price="$29/mo"
+            price="$19/mo"
             priceId={PLAN_PRICE_IDS.entry}
             isCurrent={currentPlan === "entry"}
             currentPlan={currentPlan}
@@ -474,9 +474,9 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
                     </thead>
                     <tbody className="divide-y divide-[#F3F4F6]">
                       {[
-                        { date: "Jan 16, 2026", amount: "$29.00", status: "Paid" },
-                        { date: "Dec 16, 2025", amount: "$29.00", status: "Paid" },
-                        { date: "Nov 16, 2025", amount: "$29.00", status: "Paid" },
+                        { date: "Jan 16, 2026", amount: "$19.00", status: "Paid" },
+                        { date: "Dec 16, 2025", amount: "$19.00", status: "Paid" },
+                        { date: "Nov 16, 2025", amount: "$19.00", status: "Paid" },
                       ].map((item, idx) => (
                         <tr key={idx} className="text-[13px] text-[#4B5563] group hover:bg-slate-50 transition-colors">
                           <td className="py-4 px-2 whitespace-nowrap font-medium text-[#111827]">{item.date}</td>

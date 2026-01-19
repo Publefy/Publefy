@@ -19,7 +19,7 @@ const extractHostname = (value?: string) => {
 
 const isPublefyDotCom = (value?: string) => {
   const host = extractHostname(value).toLowerCase();
-  return host === "publefy.com" || host === "publefy.vercel.app";
+  return host === "publefy.com" || host === "www.publefy.com";
 };
 
 const resolveEnvUrl = (value: string | undefined, fallback: string) => {

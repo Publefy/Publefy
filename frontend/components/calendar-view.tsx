@@ -179,10 +179,7 @@ const isPublefyHost = (value: string) => {
     const host = new URL(value).hostname.toLowerCase()
     return (
       host === "publefy.com" ||
-      host === "www.publefy.com" ||
-      host === "publefy.vercel.app" ||
-      host === "www.publefy.vercel.app" ||
-      host.endsWith(".publefy.vercel.app")
+      host === "www.publefy.com"
     )
   } catch {
     return false

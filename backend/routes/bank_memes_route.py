@@ -70,7 +70,11 @@ PLACEHOLDER_THUMB = os.getenv("PLACEHOLDER_THUMB", "static/placeholders/thumb.jp
 # =========================
 #  Gemini client (shared)
 # =========================
-def _gemini_client(project: str = "publefy", location: str = "us-central1"):
+GEMINI_PROJECT = os.getenv("GEMINI_PROJECT", "publefy-484406")
+GEMINI_LOCATION = os.getenv("GEMINI_LOCATION_TEXT", "us-central1")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-001")
+
+def _gemini_client(project: str = GEMINI_PROJECT, location: str = GEMINI_LOCATION):
     credentials, detected_project = google_auth_default(
         scopes=["https://www.googleapis.com/auth/cloud-platform"]
     )
@@ -216,7 +220,9 @@ def _render_with_caption(src_path: str, caption: str) -> tuple[str, tuple]:
 # ============ Gemini steps ============
 def _summarize_video_local(video_path: str) -> tuple[str, str]:
     """Two short sections: Video: ...  Audio: ... (<=2 lines each)."""
-    client = _gemini_client(project="publefy", location="europe-north1")
+    # Use GEMINI_LOCATION_VIDEO if present, otherwise default to GEMINI_LOCATION
+    video_location = os.getenv("GEMINI_LOCATION_VIDEO", GEMINI_LOCATION)
+    client = _gemini_client(project=GEMINI_PROJECT, location=video_location)
     mime = mimetypes.guess_type(video_path)[0] or "video/mp4"
     with open(video_path, "rb") as f:
         data = f.read()
@@ -241,7 +247,7 @@ def _summarize_video_local(video_path: str) -> tuple[str, str]:
     )
     out = ""
     for ch in client.models.generate_content_stream(
-        model="gemini-2.0-flash-001",
+        model=GEMINI_MODEL,
         contents=[types.Content(role="user", parts=[video_part, types.Part.from_text(text=prompt)])],
         config=cfg,
     ):

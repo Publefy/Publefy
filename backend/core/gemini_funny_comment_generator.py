@@ -29,10 +29,15 @@ def generate_meme_captions(
     credentials, project_id = google_auth_default(
         scopes=["https://www.googleapis.com/auth/cloud-platform"]
     )
+    
+    gemini_project = os.getenv("GEMINI_PROJECT", "publefy-484406")
+    gemini_location = os.getenv("GEMINI_LOCATION_TEXT", "us-central1")
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-001")
+
     client = genai.Client(
         vertexai=True,
-        project=project_id or "publefy",
-        location="us-central1",
+        project=project_id or gemini_project,
+        location=gemini_location,
         credentials=credentials,
     )
     
@@ -78,7 +83,7 @@ def generate_meme_captions(
     
     result = ""
     for chunk in client.models.generate_content_stream(
-        model="gemini-2.0-flash-001",
+        model=gemini_model,
         contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
         config=config,
     ):

@@ -157,6 +157,10 @@ def _upsert_user(provider: str, pid: str, name: str, email: str | None, picture:
     if not pid:
         raise BadRequest(f"{provider} profile missing id")
 
+    # Normalize email
+    if email:
+        email = email.strip().lower()
+
     user = None
     if email:
         user = db.users.find_one({"email": email})
@@ -259,11 +263,11 @@ def register():
         if request.is_json:
             payload = request.get_json(silent=True) or {}
             name = (payload.get("name") or "").strip() or None
-            email = (payload.get("email") or "").strip() or None
+            email = (payload.get("email") or "").strip().lower() or None
             password = payload.get("password")
         else:
             name = request.form.get("name")
-            email = request.form.get("email")
+            email = (request.form.get("email") or "").strip().lower()
             password = request.form.get("password")
 
         user = UserCreate(
@@ -351,11 +355,11 @@ def login():
     # Accept JSON or form: allow { email, password } or { username, password }
     if request.is_json:
         body = request.get_json(silent=True) or {}
-        username = (body.get("email") or body.get("username") or "").strip()
+        username = (body.get("email") or body.get("username") or "").strip().lower()
         password = body.get("password")
     else:
         form = request.form
-        username = (form.get("email") or form.get("username") or "").strip()
+        username = (form.get("email") or form.get("username") or "").strip().lower()
         password = form.get("password")
 
     if username:

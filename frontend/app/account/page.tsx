@@ -59,6 +59,16 @@ const PLAN_ORDER: Record<string, number> = {
   custom: 3,
 };
 
+function formatDate(dateString: string) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<Tab>("account");
   const router = useRouter();
@@ -296,6 +306,20 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
         <h1 className="text-[28px] font-semibold text-[#111827]">Subscription</h1>
       </header>
 
+      {/* Cancellation Notice "Window" */}
+      {user?.subscription?.cancel_at_period_end && (
+        <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-lg p-4 flex items-start gap-3">
+          <Clock className="w-5 h-5 text-[#DC2626] mt-0.5" />
+          <div>
+            <h3 className="text-[14px] font-bold text-[#991B1B]">Subscription Cancellation Scheduled</h3>
+            <p className="text-[13px] text-[#B91C1C] mt-1">
+              Your <strong>{currentPlan}</strong> plan will remain active until <strong>{formatDate(user.subscription.current_period_end)}</strong>. 
+              After this date, you will be moved to the Free plan.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Section: Current Plan */}
       <section className="space-y-4">
         <h2 className="text-[13px] font-bold text-[#6B7280] uppercase tracking-wider font-sans">Current Plan</h2>
@@ -306,8 +330,11 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
           <div>
             <h3 className="text-[20px] font-medium text-[#111827] capitalize">{currentPlan}</h3>
           </div>
-          <Button className="bg-[#2D5A27] hover:bg-[#24481f] text-white text-[13px] font-bold px-6 h-10 rounded shadow-sm opacity-50 cursor-not-allowed">
-            Current Plan
+          <Button className={cn(
+            "text-[13px] font-bold px-6 h-10 rounded shadow-sm opacity-50 cursor-not-allowed",
+            user?.subscription?.cancel_at_period_end ? "bg-[#DC2626] text-white" : "bg-[#2D5A27] text-white"
+          )}>
+            {user?.subscription?.cancel_at_period_end ? "Canceling" : "Current Plan"}
           </Button>
         </div>
       </section>

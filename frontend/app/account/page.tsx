@@ -271,9 +271,6 @@ function UsersManagement({ user }: { user: any }) {
           <h1 className="text-[28px] font-semibold text-[#111827]">Users</h1>
           <p className="text-[#4B5563] text-[13px] mt-1">Add users to help manage your social media.</p>
         </div>
-        <Button className="bg-[#2D5A27] hover:bg-[#24481f] text-white text-[13px] font-bold px-6 h-10 rounded shadow-sm">
-          add a user
-        </Button>
       </header>
 
       <div className="border-t border-[#E5E7EB]">
@@ -304,15 +301,26 @@ function UsersManagement({ user }: { user: any }) {
 function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => void, user: UserProfile | null }) {
   const currentPlan = (user?.subscription?.plan || user?.plan || "free").toLowerCase();
 
+  const [portalError, setPortalError] = useState<string | null>(null);
+
   const handlePortalSession = async () => {
+    setPortalError(null);
     try {
       const response: any = await apiServiceDefault.post("/billing/create-portal-session", {});
       if (response?.url) {
         // Open Stripe billing portal in a new tab as requested
         window.open(response.url, "_blank");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create portal session", error);
+      const errorMessage = error?.response?.data?.error || error?.message || "Unable to access billing portal";
+      
+      // Check if user needs to subscribe first
+      if (errorMessage.includes("customer") || errorMessage.includes("subscribe") || error?.response?.status === 400) {
+        setPortalError("Please subscribe to a plan first to access billing details and payment methods.");
+      } else {
+        setPortalError("Unable to access billing portal. Please try again later.");
+      }
     }
   };
 
@@ -333,48 +341,29 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
   };
 
   return (
-    <div className="max-w-[720px] mx-auto space-y-10 animate-in fade-in duration-500">
-      <header>
-        <h1 className="text-[28px] font-semibold text-[#111827]">Subscription</h1>
+    <div className="max-w-[680px] mx-auto space-y-16 animate-in fade-in duration-500">
+      <header className="pt-4">
+        <h1 className="text-3xl font-light tracking-tight text-[#0A0A0A]">Subscription</h1>
       </header>
 
       {/* Cancellation Notice "Window" */}
       {user?.subscription?.cancel_at_period_end && (
-        <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-lg p-4 flex items-start gap-3">
-          <Clock className="w-5 h-5 text-[#DC2626] mt-0.5" />
-          <div>
-            <h3 className="text-[14px] font-bold text-[#991B1B]">Subscription Cancellation Scheduled</h3>
-            <p className="text-[13px] text-[#B91C1C] mt-1">
-              Your <strong>{currentPlan}</strong> plan will remain active until <strong>{formatDate(user.subscription.current_period_end)}</strong>. 
+        <div className="bg-[#FEF2F2]/40 border-l-2 border-[#EF4444] rounded-sm p-5 flex items-start gap-4">
+          <Clock className="w-4 h-4 text-[#DC2626] mt-0.5 flex-shrink-0" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-medium text-[#991B1B]">Cancellation Scheduled</h3>
+            <p className="text-sm text-[#7F1D1D] leading-relaxed">
+              Your <span className="font-medium">{currentPlan}</span> plan remains active until <span className="font-medium">{formatDate(user.subscription.current_period_end)}</span>. 
               After this date, you will be moved to the Free plan.
             </p>
           </div>
         </div>
       )}
 
-      {/* Section: Current Plan */}
-      <section className="space-y-4">
-        <h2 className="text-[13px] font-bold text-[#6B7280] uppercase tracking-wider font-sans">Current Plan</h2>
-        <div className={cn(
-          "border border-[#E5E7EB] rounded-lg p-6 flex items-center justify-between bg-white shadow-sm",
-          "ring-2 ring-[#2D5A27] border-[#2D5A27]/30 bg-[#F0FDF4]/50"
-        )}>
-          <div>
-            <h3 className="text-[20px] font-medium text-[#111827] capitalize">{currentPlan}</h3>
-          </div>
-          <Button className={cn(
-            "text-[13px] font-bold px-6 h-10 rounded shadow-sm opacity-50 cursor-not-allowed",
-            user?.subscription?.cancel_at_period_end ? "bg-[#DC2626] text-white" : "bg-[#2D5A27] text-white"
-          )}>
-            {user?.subscription?.cancel_at_period_end ? "Canceling" : "Current Plan"}
-          </Button>
-        </div>
-      </section>
-
       {/* Section: Available Plans */}
-      <section className="space-y-4 pt-4">
-        <h2 className="text-[13px] font-bold text-[#6B7280] uppercase tracking-wider font-sans">Available Plans</h2>
-        <div className="space-y-3">
+      <section className="space-y-6">
+        <h2 className="text-xs font-medium text-[#737373] uppercase tracking-[0.15em]">Available Plans</h2>
+        <div className="space-y-2">
           <PlanRow
             name="Free"
             price="$0/mo"
@@ -412,21 +401,38 @@ function SubscriptionSettings({ onShowBilling, user }: { onShowBilling: () => vo
       </section>
 
       {/* Section: Billing */}
-      <section className="space-y-4 pt-4">
-        <h2 className="text-[13px] font-bold text-[#6B7280] uppercase tracking-wider font-sans">Billing</h2>
-        <div className="border border-[#E5E7EB] rounded-lg p-6 flex items-center justify-between bg-white shadow-sm hover:bg-slate-50 transition-colors">
-          <div>
-            <h3 className="text-[15px] font-semibold text-[#374151]">Payment & Billing History</h3>
-            <p className="text-[13px] text-[#6B7280] mt-0.5">Update your payment method and download receipts.</p>
+      <section className="space-y-6 pt-4 border-t border-[#F5F5F5]">
+        <h2 className="text-xs font-medium text-[#737373] uppercase tracking-[0.15em]">Billing</h2>
+        <div className="space-y-3">
+          <div className="group border border-[#F0F0F0] rounded-md p-6 flex items-center justify-between bg-white hover:border-[#E5E5E5] transition-all duration-200">
+            <div className="space-y-0.5">
+              <h3 className="text-base font-normal text-[#1A1A1A]">Payment & Billing History</h3>
+              <p className="text-sm text-[#737373]">
+                {user?.subscription?.stripe_customer_id 
+                  ? "Update your payment method and download receipts."
+                  : "Subscribe to a plan to manage your billing and payment methods."}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!user?.subscription?.stripe_customer_id}
+              className={cn(
+                "border-[#E5E5E5] text-[#4A4A4A] font-normal text-sm h-9 px-5 rounded-md transition-colors",
+                user?.subscription?.stripe_customer_id
+                  ? "hover:border-[#D4D4D4] hover:bg-[#FAFAFA]"
+                  : "opacity-50 cursor-not-allowed"
+              )}
+              onClick={handlePortalSession}
+            >
+              Details
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-[#E5E7EB] text-[#374151] font-semibold text-xs h-8 px-4 rounded hover:bg-white shadow-sm"
-            onClick={handlePortalSession}
-          >
-            Details
-          </Button>
+          {portalError && (
+            <div className="bg-[#FEF2F2]/40 border-l-2 border-[#EF4444] rounded-sm p-4 text-sm text-[#7F1D1D]">
+              {portalError}
+            </div>
+          )}
         </div>
       </section>
 
@@ -537,23 +543,24 @@ function PlanRow({
 
   return (
     <div className={cn(
-      "border border-[#E5E7EB] rounded-lg p-6 flex items-center justify-between bg-white shadow-sm transition-all",
-      isCurrent && "ring-2 ring-[#2D5A27] border-[#2D5A27]/30 bg-[#F0FDF4]/50"
+      "border border-[#F0F0F0] rounded-md p-6 flex items-center justify-between bg-white transition-all duration-200",
+      isCurrent && "border-[#0A0A0A] bg-[#FAFAFA]",
+      !isCurrent && "hover:border-[#E5E5E5] hover:shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
     )}>
-      <div className="space-y-1">
-        <h3 className="text-[18px] font-medium text-[#111827]">{name}</h3>
-        <p className="text-[13px] text-[#6B7280]">{price}</p>
+      <div className="space-y-0.5">
+        <h3 className="text-lg font-normal text-[#0A0A0A] tracking-tight">{name}</h3>
+        <p className="text-sm text-[#737373] font-light">{price}</p>
       </div>
       <Button
         disabled={isCurrent}
         onClick={() => !isCurrent && onUpgrade(name, priceId || "")}
         className={cn(
-          "text-[13px] font-bold px-6 h-10 rounded shadow-sm",
+          "text-sm font-normal h-9 px-6 rounded-md transition-all duration-200",
           isCurrent
-            ? "bg-[#2D5A27] text-white opacity-50 cursor-not-allowed"
+            ? "bg-[#0A0A0A] text-white opacity-40 cursor-not-allowed"
             : isUpgrade
-              ? "bg-[#2D5A27] hover:bg-[#24481f] text-white"
-              : "bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#6B7280]" // Grey and dim for Downgrade
+              ? "bg-[#0A0A0A] text-white hover:bg-[#1A1A1A]"
+              : "bg-white border border-[#E5E5E5] text-[#737373] hover:border-[#D4D4D4] hover:bg-[#FAFAFA]"
         )}
       >
         {buttonText}

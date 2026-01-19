@@ -403,8 +403,17 @@ def login():
             raise BadRequest("Username and password are required")
 
         user = db.users.find_one({"email": username})
-        if not user or not verify_password(password, user["password"]):
-            sentry_sdk.capture_message(f"Login: Invalid credentials for {username}", level="warning")
+        if not user:
+            sentry_sdk.capture_message(f"Login: User not found for {username}", level="warning")
+            raise Unauthorized("Invalid credentials")
+        
+        # Check if user has a password field (might have registered via OAuth)
+        if "password" not in user or not user.get("password"):
+            sentry_sdk.capture_message(f"Login: User {username} has no password (OAuth-only account)", level="warning")
+            raise Unauthorized("This account was created with social login. Please use Google or Facebook to sign in.")
+        
+        if not verify_password(password, user["password"]):
+            sentry_sdk.capture_message(f"Login: Invalid password for {username}", level="warning")
             raise Unauthorized("Invalid credentials")
 
         user["_id"] = str(user["_id"])

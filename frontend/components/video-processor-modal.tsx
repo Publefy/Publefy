@@ -1806,7 +1806,10 @@ export function VideoProcessorModal({
             <Button
               onClick={() => {
                 setInsufficientPointsOpen(false);
-                window.location.href = "https://publefy.com/account";
+                const accountUrl = typeof window !== "undefined" 
+                  ? `${window.location.origin}/account?tab=subscription`
+                  : "/account?tab=subscription";
+                window.location.href = accountUrl;
               }}
               className="w-full sm:w-auto bg-gradient-to-b from-[#7C7EF4] to-[#6F80F0] text-white hover:opacity-90"
             >

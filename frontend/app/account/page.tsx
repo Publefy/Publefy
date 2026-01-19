@@ -2,7 +2,7 @@
 
 import { apiServiceDefault } from "@/services/api/api-service";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   User,
@@ -70,10 +70,30 @@ function formatDate(dateString: string) {
 }
 
 export default function AccountPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("account");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  
+  // Initialize activeTab from URL parameter or default to "account"
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (tabParam === "subscription" || tabParam === "billing-history") {
+      return tabParam;
+    }
+    return "account";
+  });
   const [user, setUser] = useState<UserProfile | null>(null);
   const [profileCount, setProfileCount] = useState<number>(0);
+
+  // Update activeTab when URL parameter changes
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "subscription" || tab === "billing-history") {
+      setActiveTab(tab);
+    } else if (tab === null) {
+      // If tab param is removed, default back to account
+      setActiveTab("account");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Initial load from localStorage for faster UI
@@ -133,7 +153,19 @@ export default function AccountPage() {
 
   const SidebarItem = ({ id, icon: Icon, label, danger }: { id: Tab, icon: any, label: string, danger?: boolean }) => (
     <button
-      onClick={() => id === "logout" ? handleLogout() : setActiveTab(id)}
+      onClick={() => {
+        if (id === "logout") {
+          handleLogout();
+        } else {
+          setActiveTab(id);
+          // Update URL to reflect the active tab (except for account which is default)
+          if (id === "subscription" || id === "billing-history") {
+            router.push(`/account?tab=${id}`, { scroll: false });
+          } else {
+            router.push("/account", { scroll: false });
+          }
+        }
+      }}
       className={cn(
         "w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all duration-200 rounded-lg group",
         (activeTab === id || (id === "subscription" && activeTab === "billing-history")) && !danger

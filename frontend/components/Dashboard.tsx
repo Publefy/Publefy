@@ -689,13 +689,14 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
         </div>
 
         {/* Calendar View */}
-        <div className="flex-1 flex flex-col overflow-hidden rounded-[22px] border border-white/40 bg-white/60 backdrop-blur-sm shadow-[0_10px_30px_rgba(27,13,63,0.08)]">
+        <div className="flex-1 flex flex-col overflow-hidden rounded-[22px] border border-white/40 bg-white/60 backdrop-blur-sm shadow-[0_10px_30px_rgba(27,13,63,0.08)] min-w-0">
           {loadingPosts && (
             <div className="flex items-center gap-2 px-4 py-2 text-sm text-[#5A5192] border-b border-[#E7E5F7]/60 bg-white/50">
               <div className="h-3 w-3 rounded-full border-2 border-[#7C7EF4]/40 border-b-[#7C7EF4] animate-spin" />
               <span>Loading posts...</span>
             </div>
           )}
+          <div className="flex-1 min-w-0 min-h-0 w-full h-full">
           <CalendarView
             currentDate={currentDate}
             profile={selectedProfile}
@@ -708,6 +709,7 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
             onPostUpdate={handlePostUpdate}
             onPostDelete={handlePostDelete}
           />
+          </div>
         </div>
       </div>
 

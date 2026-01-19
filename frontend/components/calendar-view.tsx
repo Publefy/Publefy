@@ -1278,9 +1278,9 @@ export function CalendarView({
 
   // render
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full min-h-0 min-w-0">
       {/* Header */}
-      <div className="border-b border-[#E7E5F7]/40 p-3 md:p-4 bg-white/40 backdrop-blur-sm">
+      <div className="flex-shrink-0 border-b border-[#E7E5F7]/40 p-3 md:p-4 bg-white/40 backdrop-blur-sm">
         {/* Mobile: 2 rows, Desktop: 1 row */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-2">
           {/* Row 1: Today + Arrows + Date Range */}
@@ -1374,13 +1374,13 @@ export function CalendarView({
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-auto dashboard-calendar-scroll">
+      <div className="flex-1 overflow-auto dashboard-calendar-scroll w-full min-h-0 min-w-0 flex flex-col">
         {viewMode === "week" ? (
-          <div className="relative lg:min-h-full">
+          <div className="relative w-full flex-1 flex flex-col min-w-0">
             {/* Days Header */}
             <div className="sticky top-0 z-10 bg-white/60 backdrop-blur-sm border-b border-[#E7E5F7]/40">
-              <div className="grid grid-cols-[auto_repeat(7,1fr)]">
-                <div className="border-r border-[#E7E5F7]/40 border-b p-2 min-w-[44px] md:min-w-[48px] w-12" />
+              <div className="grid grid-cols-[auto_repeat(7,minmax(0,1fr))] w-full">
+                <div className="border-r border-[#E7E5F7]/40 border-b p-2 min-w-[44px] md:min-w-[48px] w-12 flex-shrink-0" />
                 {daysOfWeek.map((day, index) => (
                   <div
                     key={index}
@@ -1388,7 +1388,7 @@ export function CalendarView({
                       "text-center p-2 border-b border-[#E7E5F7]/40",
                       index < 6 && "border-r border-[#E7E5F7]/40",
                       day.isToday && "bg-[#F5F0FF]/50",
-                      "flex items-center justify-center gap-1.5"
+                      "flex items-center justify-center gap-1.5 min-w-0"
                     )}
                   >
                     <span className="text-[10px] font-normal text-[#5A5192] uppercase tracking-wide">{day.dayName}</span>
@@ -1399,12 +1399,12 @@ export function CalendarView({
             </div>
 
             {/* Time grid */}
-            <div className={isLoading ? "opacity-50 pointer-events-none" : ""}>
+            <div className={cn(isLoading ? "opacity-50 pointer-events-none" : "", "flex-1 flex flex-col min-h-0")}>
               {timeSlots.map((timeSlot, slotIndex) => (
-                <div key={timeSlot.timeString} className="grid grid-cols-[auto_repeat(7,1fr)]">
+                <div key={timeSlot.timeString} className="grid grid-cols-[auto_repeat(7,minmax(0,1fr))] w-full flex-1 min-h-0">
                   <div className={cn(
                     "py-0.5 px-1.5 border-r border-[#E7E5F7]/60 border-b text-[10px] text-right",
-                    "min-w-[44px] md:min-w-[40px] w-10", // Reduced width for compact display
+                    "min-w-[44px] md:min-w-[40px] w-10 flex-shrink-0", // Reduced width for compact display
                     slotIndex % 2 === 0 ? "bg-slate-50/60" : "bg-slate-50/40",
                     "text-[#5A5192] font-medium leading-tight"
                   )}>
@@ -1421,11 +1421,11 @@ export function CalendarView({
                       <div
                         key={dayIndex}
                         className={cn(
-                          "border-b border-r border-[#E7E5F7]/60 min-h-[28px] h-[28px] relative transition-colors duration-150",
+                          "border-b border-r border-[#E7E5F7]/60 min-h-[28px] relative transition-colors duration-150",
                           slotIndex % 2 === 0 ? "bg-white/60" : "bg-white/40",
                           isPast && "bg-[#E8E0F5]/60",
                           isDragOver && "bg-[#7C7EF4]/20",
-                          "flex flex-col p-0.5 overflow-hidden"
+                          "flex flex-col p-0.5 overflow-hidden min-w-0 flex-1"
                         )}
                         onDragOver={(e) => handleDragOver(e, day, timeSlot)}
                         onDragLeave={handleDragLeave}
@@ -1510,15 +1510,16 @@ export function CalendarView({
           </div>
         ) : (
           // Month View
-          <div className="relative lg:flex lg:flex-col lg:min-h-full">
+          <div className="relative w-full h-full min-h-full lg:flex lg:flex-col">
             <div className="sticky top-0 z-10 bg-white/60 backdrop-blur-sm border-b border-[#E7E5F7]/40">
-              <div className="grid grid-cols-7">
+              <div className="grid grid-cols-7 w-full">
                 {monthMatrix[0]?.map((day, idx) => (
                   <div
                     key={idx}
                     className={cn(
                       "text-center p-2 border-b border-[#E7E5F7]/40",
-                      idx < 6 && "border-r border-[#E7E5F7]/40"
+                      idx < 6 && "border-r border-[#E7E5F7]/40",
+                      "min-w-0"
                     )}
                   >
                     <div className="text-xs text-[#5A5192]">{day.dayName}</div>
@@ -1530,11 +1531,11 @@ export function CalendarView({
             <div
               className={cn(
                 isLoading ? "opacity-50 pointer-events-none" : "",
-                "lg:flex lg:flex-1 lg:flex-col"
+                "lg:flex lg:flex-1 lg:flex-col w-full"
               )}
             >
               {monthMatrix.map((week, wi) => (
-                <div key={wi} className="grid grid-cols-7 lg:flex-1">
+                <div key={wi} className="grid grid-cols-7 lg:flex-1 w-full">
                   {week.map((day, di) => {
                     const inMonth = isSameMonth(day.date, currentDate)
                     const oldForDay = uniqueById(getOldPostsForDay(day.date))
@@ -1557,7 +1558,7 @@ export function CalendarView({
                           day.isToday ? "bg-[#F5F0FF]/50" : "bg-white/40",
                           !inMonth && "opacity-50",
                           isDragOver && "bg-[#7C7EF4]/20",
-                          "flex flex-col"
+                          "flex flex-col min-w-0"
                         )}
                         onDragOver={(e) => handleDragOver(e, day)}
                         onDragLeave={handleDragLeave}

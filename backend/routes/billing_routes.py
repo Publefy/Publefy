@@ -74,6 +74,38 @@ def create_checkout_session():
         # Return the actual error message so we can debug in the browser
         return jsonify({"error": str(e)}), 500
 
+@billing_blueprint.route("/set-unlimited", methods=["POST"])
+@login_required
+def set_unlimited_plan():
+    """
+    Set current user's plan to unlimited (for testing/admin use).
+    """
+    user = g.current_user
+    user_id = user["_id"]
+    
+    result = db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {
+            "$set": {
+                "subscription.plan": "unlimited",
+                "subscription.status": "active",
+                "subscription.last_updated": datetime.utcnow()
+            }
+        }
+    )
+    
+    if result.modified_count > 0 or result.matched_count > 0:
+        return jsonify({
+            "status": "success",
+            "message": "Plan set to unlimited",
+            "subscription": {
+                "plan": "unlimited",
+                "status": "active"
+            }
+        }), 200
+    else:
+        return jsonify({"error": "Failed to update plan"}), 500
+
 @billing_blueprint.route("/create-portal-session", methods=["POST"])
 @login_required
 def create_portal_session():

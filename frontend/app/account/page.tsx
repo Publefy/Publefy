@@ -1,7 +1,7 @@
 "use client";
 
 import { apiServiceDefault } from "@/services/api/api-service";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -69,7 +69,7 @@ function formatDate(dateString: string) {
   });
 }
 
-export default function AccountPage() {
+function AccountPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -633,6 +633,30 @@ function BillingHistory({ onBack, user }: { onBack: () => void, user: any }) {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-white font-sans antialiased text-[#1F2937]">
+        <aside className="w-64 border-r border-[#E5E7EB] flex flex-col p-4 sticky top-0 h-screen bg-white">
+          <Link href="/" className="mb-8 flex items-center gap-2 px-2 hover:opacity-80 transition-opacity">
+            <img src="/logo.png" alt="Publefy Logo" className="w-24 h-auto" />
+          </Link>
+        </aside>
+        <main className="flex-1 overflow-y-auto px-12 py-10 max-w-4xl">
+          <div className="max-w-[720px] mx-auto space-y-10">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-48 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-64"></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    }>
+      <AccountPageContent />
+    </Suspense>
   );
 }
 

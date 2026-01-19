@@ -29,22 +29,33 @@ def create_checkout_session():
         
     user = g.current_user
     
+    # Check if user already has a Stripe Customer ID
+    stripe_customer_id = user.get("subscription", {}).get("stripe_customer_id")
+    
     try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
+        checkout_params = {
+            'payment_method_types': ['card'],
+            'line_items': [{
                 'price': price_id,
                 'quantity': 1,
             }],
-            mode='subscription',
-            success_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com/") + "?success=true",
-            cancel_url=os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com/") + "?canceled=true",
-            client_reference_id=str(user["_id"]),
-            customer_email=user["email"],
-            metadata={
-                "plan": plan_name
+            'mode': 'subscription',
+            'success_url': os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com/") + "?success=true",
+            'cancel_url': os.getenv("APP_WEB_REDIRECT_URI", "https://publefy.com/") + "?canceled=true",
+            'client_reference_id': str(user["_id"]),
+            'metadata': {
+                "plan": plan_name,
+                "user_id": str(user["_id"])
             }
-        )
+        }
+        
+        # If we have a customer ID, use it. Otherwise, use email.
+        if stripe_customer_id:
+            checkout_params['customer'] = stripe_customer_id
+        else:
+            checkout_params['customer_email'] = user.get("email")
+
+        session = stripe.checkout.Session.create(**checkout_params)
         return jsonify({"url": session.url})
     except Exception as e:
         logger.error(f"Error creating checkout session: {str(e)}")

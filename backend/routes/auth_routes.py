@@ -315,6 +315,13 @@ def register():
             "current_period_end": None,
             "cancel_at_period_end": False
         }
+        # Initialize default usage points
+        user_dict["usage"] = {
+            "points_balance": 16,
+            "points_total_limit": 16,
+            "points_used": 0,
+            "total_videos_generated": 0
+        }
         result = db.users.insert_one(user_dict)
 
         user_dict["_id"] = str(result.inserted_id)

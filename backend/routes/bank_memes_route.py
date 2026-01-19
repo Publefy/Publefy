@@ -1077,7 +1077,18 @@ def generate_memes_from_bank():
     if not user_doc:
         return jsonify({"error": "User not found"}), 404
     
-    usage = user_doc.get("usage", {})
+    usage = user_doc.get("usage")
+    
+    # Lazy initialization for existing users missing usage field
+    if not usage:
+        usage = {
+            "points_balance": 16,
+            "points_total_limit": 16,
+            "points_used": 0,
+            "total_videos_generated": 0
+        }
+        db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
+    
     balance = usage.get("points_balance", 0)
     
     # Each batch generation of 5 videos costs 5 points (1 per video)
@@ -1663,7 +1674,18 @@ def regen_at_from_bank():
     if not user_doc:
         return jsonify({"error": "User not found"}), 404
     
-    usage = user_doc.get("usage", {})
+    usage = user_doc.get("usage")
+    
+    # Lazy initialization for existing users missing usage field
+    if not usage:
+        usage = {
+            "points_balance": 16,
+            "points_total_limit": 16,
+            "points_used": 0,
+            "total_videos_generated": 0
+        }
+        db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"usage": usage}})
+    
     balance = usage.get("points_balance", 0)
     
     # Each regeneration costs 1 point

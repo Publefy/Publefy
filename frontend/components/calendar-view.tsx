@@ -1385,10 +1385,10 @@ export function CalendarView({
                   <div
                     key={index}
                     className={cn(
-                      "text-center p-2 border-b border-[#E7E5F7]/40",
+                      "text-center border-b border-[#E7E5F7]/40",
                       index < 6 && "border-r border-[#E7E5F7]/40",
                       day.isToday && "bg-[#F5F0FF]/50",
-                      "flex items-center justify-center gap-1.5 min-w-0"
+                      "flex items-center justify-center gap-1.5 min-w-0 p-2"
                     )}
                   >
                     <span className="text-[10px] font-normal text-[#5A5192] uppercase tracking-wide">{day.dayName}</span>
@@ -1404,7 +1404,7 @@ export function CalendarView({
                 <div key={timeSlot.timeString} className="grid grid-cols-[auto_repeat(7,minmax(0,1fr))] w-full flex-1 min-h-0">
                   <div className={cn(
                     "py-0.5 px-1.5 border-r border-[#E7E5F7]/60 border-b text-[10px] text-right",
-                    "min-w-[44px] md:min-w-[40px] w-10 flex-shrink-0", // Reduced width for compact display
+                    "min-w-[44px] md:min-w-[48px] w-12 flex-shrink-0", // Match header width exactly
                     slotIndex % 2 === 0 ? "bg-slate-50/60" : "bg-slate-50/40",
                     "text-[#5A5192] font-medium leading-tight"
                   )}>
@@ -1421,7 +1421,8 @@ export function CalendarView({
                       <div
                         key={dayIndex}
                         className={cn(
-                          "border-b border-r border-[#E7E5F7]/60 min-h-[28px] relative transition-colors duration-150",
+                          "border-b border-[#E7E5F7]/60 min-h-[28px] relative transition-colors duration-150",
+                          dayIndex < 6 && "border-r border-[#E7E5F7]/60", // Match header border logic exactly
                           slotIndex % 2 === 0 ? "bg-white/60" : "bg-white/40",
                           isPast && "bg-[#E8E0F5]/60",
                           isDragOver && "bg-[#7C7EF4]/20",

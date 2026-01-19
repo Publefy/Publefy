@@ -1036,24 +1036,24 @@ export function CalendarView({
           <TooltipTrigger asChild>
             <div
               className={cn(
-                "m-1 p-2 relative group cursor-pointer rounded-md shadow-sm hover:shadow-md transition-all duration-200",
+                "m-0 p-0.5 relative group cursor-pointer rounded shadow-sm hover:shadow-md transition-all duration-200",
                 dragOver && "pointer-events-none"
               )}
               onClick={onClick}
               draggable
               onDragStart={onDragStart}
             >
-              <div className="relative w-10 h-16 mx-auto rounded overflow-hidden">
+              <div className="relative w-6 h-[24px] mx-auto rounded overflow-hidden">
                 {thumb ? (
                   <img src={thumb} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white text-[11px]">
-                    <Film className="h-4 w-4" />
+                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white text-[8px]">
+                    <Film className="h-2 w-2" />
                   </div>
                 )}
-                <div className="px-1 flex justify-between w-full absolute bottom-1 left-0">
-                  <CircleCheck className="h-3 w-3 text-white drop-shadow-md" />
-                  <SquarePlay className="h-3 w-3 text-white drop-shadow-md" />
+                <div className="px-0.5 flex justify-between w-full absolute bottom-0.5 left-0">
+                  <CircleCheck className="h-2 w-2 text-white drop-shadow-md" />
+                  <SquarePlay className="h-2 w-2 text-white drop-shadow-md" />
                 </div>
               </div>
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/20 rounded transition-opacity duration-200">
@@ -1367,10 +1367,10 @@ export function CalendarView({
               {timeSlots.map((timeSlot, slotIndex) => (
                 <div key={timeSlot.timeString} className="grid grid-cols-[auto_repeat(7,1fr)]">
                   <div className={cn(
-                    "p-2 border-r border-[#E7E5F7]/60 border-b text-xs text-right",
-                    "min-w-[44px] md:min-w-[48px] w-12", // Minimum width for readability on mobile
+                    "py-0.5 px-1.5 border-r border-[#E7E5F7]/60 border-b text-[10px] text-right",
+                    "min-w-[44px] md:min-w-[40px] w-10", // Reduced width for compact display
                     slotIndex % 2 === 0 ? "bg-slate-50/60" : "bg-slate-50/40",
-                    "text-[#5A5192] font-medium"
+                    "text-[#5A5192] font-medium leading-tight"
                   )}>
                     {timeSlot.timeString}
                   </div>
@@ -1385,11 +1385,11 @@ export function CalendarView({
                       <div
                         key={dayIndex}
                         className={cn(
-                          "border-b border-r border-[#E7E5F7]/60 min-h-[100px] relative transition-colors duration-150",
+                          "border-b border-r border-[#E7E5F7]/60 min-h-[28px] h-[28px] relative transition-colors duration-150",
                           slotIndex % 2 === 0 ? "bg-white/60" : "bg-white/40",
                           isPast && "bg-[#E8E0F5]/60",
                           isDragOver && "bg-[#7C7EF4]/20",
-                          "flex flex-col p-1.5"
+                          "flex flex-col p-0.5 overflow-hidden"
                         )}
                         onDragOver={(e) => handleDragOver(e, day, timeSlot)}
                         onDragLeave={handleDragLeave}
@@ -1437,8 +1437,8 @@ export function CalendarView({
                                     day={day}
                                     timeSlot={timeSlot}
                                     trigger={
-                                      <div className="flex items-center justify-center p-1 rounded-full bg-[#7C7EF4] text-white shadow-sm hover:bg-[#301B69] transition-colors cursor-pointer group">
-                                        <span className="text-[9px] font-bold">+{remaining}</span>
+                                      <div className="flex items-center justify-center p-0.5 rounded-full bg-[#7C7EF4] text-white shadow-sm hover:bg-[#301B69] transition-colors cursor-pointer group">
+                                        <span className="text-[8px] font-bold leading-none">+{remaining}</span>
                                       </div>
                                     }
                                   />

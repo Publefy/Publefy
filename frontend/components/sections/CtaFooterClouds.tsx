@@ -19,9 +19,8 @@ export default function CtaFooterClouds() {
   ];
 
   const socials = [
-    { icon: FacebookIcon, label: "Facebook" },
-    { icon: TwitterIcon, label: "Twitter" },
-    { icon: InstagramIcon, label: "Instagram" },
+    { icon: TwitterIcon, label: "Twitter", url: "https://x.com/Publefy" },
+    { icon: InstagramIcon, label: "Instagram", url: "https://www.instagram.com/publefy/" },
   ];
 
   return (
@@ -136,14 +135,17 @@ export default function CtaFooterClouds() {
             <div>
               <div className="mb-3 text-sm font-semibold">Social</div>
               <div className="flex items-center gap-3">
-                {socials.map(({ icon: Icon, label }, i) => (
-                  <button
+                {socials.map(({ icon: Icon, label, url }, i) => (
+                  <a
                     key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={label}
-                    className="grid h-9 w-9 place-items-center rounded-full bg-[#5B3FF6] text-white shadow-[0_6px_16px_rgba(74,54,190,0.35)]"
+                    className="grid h-9 w-9 place-items-center rounded-full bg-[#5B3FF6] text-white shadow-[0_6px_16px_rgba(74,54,190,0.35)] hover:bg-[#6D4FFF] transition-colors"
                   >
                     <Icon className="h-4 w-4" />
-                  </button>
+                  </a>
                 ))}
               </div>
               </div>

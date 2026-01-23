@@ -732,26 +732,7 @@ def _source_fingerprint_by_name(bucket, name: str) -> str:
         pass
     return _blob_fingerprint(b)
 
-def _used_fingerprints_for(user_id: str, profile_id: str | None) -> set[str]:
-    q = {"user_id": user_id}
-    if profile_id:
-        q["profile_id"] = profile_id
-    cur = db.meme_usage.find(q, {"fingerprint": 1})
-    return {doc["fingerprint"] for doc in cur}
-
-def _mark_used(user_id: str, profile_id: str, fingerprint: str, source_id: str, niche: str | None):
-    try:
-        db.meme_usage.insert_one({
-            "user_id": user_id,
-            "profile_id": profile_id,
-            "fingerprint": fingerprint,
-            "source_id": source_id,
-            "niche": niche,
-            "created_at": datetime.utcnow(),
-        })
-    except Exception:
-        # ignore dup key errors if unique index exists
-        pass
+# meme_usage tracking removed - functionality disabled
 
 
 def _thumb_or_fallback(
@@ -961,10 +942,10 @@ def list_from_bank():
     niche_prefix = f"{base_prefix}{_slug_niche(niche)}/" if niche else base_prefix
     client, bucket = _build_client(bucket_name, user_project)
 
-    # never-repeat scope
+    # never-repeat scope (disabled - meme_usage removed)
     user = getattr(g, "current_user", None)
     user_id = user["_id"] if user and user.get("_id") else None
-    used = _used_fingerprints_for(user_id, profile_id or None) if user_id else set()
+    used = set()  # meme_usage tracking disabled
 
     tokens = _tokens_from_keyword(keyword)
 
@@ -1147,9 +1128,9 @@ def generate_memes_from_bank():
         return jsonify({"error": str(e)}), 500
     client, bucket = _build_client(bucket_name, user_project)
 
-    # never-repeat + watermark
+    # never-repeat + watermark (meme_usage tracking disabled)
     watermark = _should_watermark(user_id)
-    used = _used_fingerprints_for(user_id, profile_id_str if not allow_repeats else None) if (user_id and not allow_repeats) else set()
+    used = set()  # meme_usage tracking disabled
 
     # collect ALL bank videos (flat random)
     blobs = list(bucket.list_blobs(prefix=base_prefix))
@@ -1243,11 +1224,7 @@ def generate_memes_from_bank():
                 sentry_sdk.capture_exception(e)
                 continue
 
-            # never repeat
-            try:
-                _mark_used(user_id, profile_id_str, fp, src_blob, niche=None)
-            except Exception:
-                pass
+            # never repeat (disabled - meme_usage removed)
 
             # summary/tag just like upload flow
             try:
@@ -1382,12 +1359,10 @@ def regen_one_from_bank():
     if current_id:
         exclude.add(current_id)
 
-    # never-repeat (ignored if allowRepeats=True)
+    # never-repeat (disabled - meme_usage removed)
     user = getattr(g, "current_user", None)
     user_id = user["_id"] if user and user.get("_id") else None
-    used = set()
-    if user_id and not allow_repeats:
-        used = _used_fingerprints_for(user_id, profile_id or None)
+    used = set()  # meme_usage tracking disabled
 
     # collect blobs from niche, else root
     blobs = list(bucket.list_blobs(prefix=niche_prefix))
@@ -1508,11 +1483,11 @@ def generate_from_bank():
 
     tokens = _tokens_from_keyword(keyword)
 
-    # watermark + used set
+    # watermark + used set (meme_usage tracking disabled)
     user = getattr(g, "current_user", None)
     user_id = user["_id"] if user and user.get("_id") else None
     watermark = _should_watermark(user_id) if user_id else True
-    used = _used_fingerprints_for(user_id, body.get("profileId") or None) if (user_id and not allow_repeats) else set()
+    used = set()  # meme_usage tracking disabled
 
     # collect blobs
     blobs = list(bucket.list_blobs(prefix=niche_prefix))
@@ -1698,9 +1673,7 @@ def regen_at_from_bank():
     # (Points check removed - regeneration is free for all users)
 
     watermark = _should_watermark(user_id) if user_id else True
-    used_fps: set[str] = set()
-    if user_id and not allow_repeats:
-        used_fps = _used_fingerprints_for(user_id, profile_id or None)
+    used_fps: set[str] = set()  # meme_usage tracking disabled
 
     # collect pool same as /from-bank/generate
     blobs = list(bucket.list_blobs(prefix=niche_prefix))
@@ -1882,12 +1855,7 @@ def create_reel_from_bank():
         profile_id_str = str(prof_doc.get("_id")) if prof_doc else None
         apply_watermark = _should_watermark(user_id)
 
-        # Mark usage (never-repeat)
-        try:
-            src_fp = _source_fingerprint_by_name(bucket, blob_name)
-            _mark_used(user_id, profile_id_str, src_fp, blob_name, niche=None)
-        except Exception:
-            pass
+        # Mark usage (disabled - meme_usage removed)
 
         # Insert reel (schema aligned with /memes/my-video)
         inserted = create_reel_for_mem(

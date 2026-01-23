@@ -1600,7 +1600,7 @@ export function VideoProcessorModal({
                             </div>
 
                             {/* Meme title/caption - improved typography with fixed height */}
-                            <div className="px-2 pt-2 pb-1.5 min-h-[44px] flex items-start flex-shrink-0">
+                            <div className="px-2 pt-2 pb-4 min-h-[44px] flex items-start flex-shrink-0">
                               {meme.text ? (
                                 <div className="text-sm font-semibold text-[#301B69] line-clamp-2 leading-snug">
                                   {meme.text}
@@ -1617,25 +1617,7 @@ export function VideoProcessorModal({
                               )}
                             </div>
 
-                            {/* Regenerate button - polished with fixed height */}
-                            <div className="px-2 pb-2 flex-shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => handleRegenerateMeme(meme.id)}
-                                disabled={regeneratingMemeId === meme.id || (meme.regenCount ?? 0) >= 2}
-                                title={ (meme.regenCount ?? 0) >= 2 ? "Regeneration limit reached (max 2)" : "Get a different template"}
-                                className={cn(
-                                  "w-full px-3 py-1.5 rounded-full text-xs font-medium h-[32px]",
-                                  "border border-[#E7E5F7] bg-white/50 backdrop-blur-sm",
-                                  "text-[#301B69]",
-                                  "hover:bg-white/70 hover:border-[#7C7EF4] hover:shadow-[0_2px_8px_rgba(124,126,244,0.15)]",
-                                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                                  prefersReducedMotion ? "" : "transition-all duration-200 active:scale-[0.97]"
-                                )}
-                              >
-                                {regeneratingMemeId === meme.id ? "Regenerating..." : (meme.regenCount ?? 0) >= 2 ? "Limit Reached" : "Regenerate"}
-                              </button>
-                            </div>
+
                           </div>
 
                           {regeneratingMemeId === meme.id && (

@@ -671,7 +671,7 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
               <span className="text-sm font-medium">Settings</span>
             </button>
             <a
-              href="https://discord.gg/ZPDkzAdG"
+              href="https://discord.gg/PYVjRmRA"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#301B69] hover:bg-[#7C7EF4]/10 transition-colors group no-underline"

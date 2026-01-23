@@ -15,10 +15,57 @@ from services.reel_service import update_post_data
 GRAPH_API_URL = "https://graph.facebook.com/v23.0"
 
 # Run scheduler in UTC to match how we store scheduled_time (UTC)
-scheduler = BackgroundScheduler(timezone=timezone.utc)
+scheduler = BackgroundScheduler(
+    timezone=timezone.utc,
+    job_defaults={
+        'misfire_grace_time': 60,  # Allow jobs to run up to 60 seconds late
+        'coalesce': True           # Combine multiple missed executions into one
+    }
+)
 scheduler.start()
 
- 
+def process_due_posts() -> Dict[str, Any]:
+    """
+    Find all posts that are 'scheduled' but whose time has already passed,
+    and publish them immediately.
+    """
+    import logging
+    logger = logging.getLogger("publefy.scheduler")
+    
+    try:
+        now_utc = datetime.now(timezone.utc)
+        # Find posts that are 'scheduled' and whose scheduled_time is in the past
+        # We use a small buffer (e.g. 1 minute) to avoid double-processing if a job just started
+        cutoff = now_utc - timedelta(seconds=10)
+        
+        query = {
+            "status": "scheduled",
+            "scheduled_time": {"$lte": cutoff.isoformat()}
+        }
+        
+        due_posts = list(db.posts.find(query))
+        
+        if not due_posts:
+            return {"status": "ok", "message": "No overdue posts found"}
+            
+        logger.info(f"Found {len(due_posts)} overdue posts. Processing now...")
+        
+        results = []
+        for post in due_posts:
+            post_id = post.get("id") or str(post.get("_id"))
+            logger.info(f"Processing overdue post: {post_id}")
+            publish_scheduled_post({"id": post_id})
+            results.append(post_id)
+            
+        return {
+            "status": "ok", 
+            "processed_count": len(due_posts),
+            "processed_ids": results
+        }
+    except Exception as e:
+        logger.exception("Error in process_due_posts")
+        return {"status": "error", "message": str(e)}
+
 def cancel_scheduled_job_only(post_id: str) -> None:
     """
     Remove the APScheduler job for this post id, but DO NOT touch the DB.
@@ -32,18 +79,30 @@ def cancel_scheduled_job_only(post_id: str) -> None:
 def load_scheduled_posts() -> tuple[list, int]:
     """Load all scheduled posts from the database"""
     try:
-        posts = db.posts.find({"status": "scheduled"}).to_list(None)
+        posts = list(db.posts.find({"status": "scheduled"}))
         return posts, 200
     except Exception as e:
         return {"error": f"Failed to load scheduled posts: {str(e)}"}, 500
 
 def schedule_post(post: Dict[str, Any]) -> tuple[Dict[str, Any], int]:
+    import logging
+    logger = logging.getLogger("publefy.scheduler")
+    
     try:
         current_post = db.posts.find_one({"id": post["id"]})
         if current_post and current_post.get("status") in ["published", "failed", "publishing"]:
             return {"error": f"Post is already {current_post['status']}"}, 400
 
         scheduled_time = parse_to_utc_dt(post["scheduled_time"])
+        now_utc = datetime.now(timezone.utc)
+
+        # If the time is in the past, publish it immediately instead of scheduling
+        if scheduled_time <= now_utc:
+            logger.info(f"Post {post['id']} scheduled time ({scheduled_time}) is in the past. Executing immediately.")
+            # We use a thread or just call it directly since this is usually called from an API endpoint
+            # However, publish_scheduled_post handles the DB updates, so we'll use that.
+            publish_scheduled_post({"id": post["id"]})
+            return {"status": "published", "message": "Post was past due and executed immediately"}, 200
 
         job_id = f"post_{post['id']}"
         scheduler.add_job(
@@ -448,18 +507,29 @@ def publish_scheduled_post(post: Dict[str, Any]) -> None:
 
 def initialize_scheduler() -> tuple[Dict[str, Any], int]:
     """Initialize the scheduler with existing scheduled posts"""
+    import logging
+    logger = logging.getLogger("publefy.scheduler")
+    
     try:
+        # 1. Process anything that was missed while the server was down
+        logger.info("Checking for overdue posts during startup...")
+        process_due_posts()
+
+        # 2. Load and schedule remaining future posts
+        logger.info("Loading future scheduled posts...")
         posts, status = load_scheduled_posts()
         if status != 200:
             return posts, status
             
         for post in posts:
+            # schedule_post now handles the past/future logic
             result, status = schedule_post(post)
             if status != 200:
-                return result, status
+                logger.error(f"Failed to schedule post {post.get('id')}: {result}")
                 
         return {"status": "initialized"}, 200
     except Exception as e:
+        logger.exception("Failed to initialize scheduler")
         return {"error": f"Failed to initialize scheduler: {str(e)}"}, 500
 
 initialize_scheduler()

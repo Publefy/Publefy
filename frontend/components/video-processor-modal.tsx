@@ -1483,12 +1483,6 @@ export function VideoProcessorModal({
 
               {generatedMemes.length > 0 && (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-lg font-semibold text-[#301B69]">
-                      Results ({generatedMemes.length})
-                    </h3>
-                  </div>
-
                   {/* Results - 3 column grid to match generated memes */}
                   <div className="overflow-x-auto overflow-y-hidden xl:overflow-x-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     <div className="meme-results-grid grid gap-4 pb-2">

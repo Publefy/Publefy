@@ -426,7 +426,11 @@ export function VideoProcessorModal({
   const prefersReducedMotion = useReducedMotion();
 
   // Niche suggestions
-  const nicheSuggestions = ["Fitness", "Real Estate", "Gym", "Food", "Marketing", "Travel", "Finance", "Pets"];
+  const nicheSuggestions = [
+    { title: "Gym", description: "workouts, generate me memes for the gym culture" },
+    { title: "Real Estate", description: "deals, generate me memes for property investors" },
+    { title: "Food", description: "recipes, generate me memes for cooking enthusiasts" }
+  ];
   const [resumeMeta, setResumeMeta] = useState<{ sourceType?: string; fileName?: string; selectedVideoId?: string; selectedMemes?: string[] } | null>(null);
 
   // Preview modal for Meme Bank items
@@ -1294,7 +1298,7 @@ export function VideoProcessorModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* keep max height, but allow inner content to scroll */}
-      <DialogContent className="w-[95vw] max-w-[1400px] p-0 max-h-[80vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-[680px] p-0 max-h-[80vh] flex flex-col">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-2xl font-bold text-[#301B69]">Meme Bank</DialogTitle>
           <DialogDescription className="text-[#5A5192]">
@@ -1324,14 +1328,14 @@ export function VideoProcessorModal({
               scrollbar-width: thin;
               scrollbar-color: rgba(124, 126, 244, 0.3) transparent;
             }
-            @media (min-width: 1280px) {
+            @media (min-width: 640px) {
               .meme-results-grid {
-                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
               }
             }
-            @media (max-width: 1279px) {
+            @media (max-width: 639px) {
               .meme-results-grid {
-                grid-template-columns: repeat(5, 200px) !important;
+                grid-template-columns: repeat(3, minmax(100px, 1fr)) !important;
               }
             }
             @keyframes pulse-soft {
@@ -1367,7 +1371,7 @@ export function VideoProcessorModal({
                   </Label>
                   <Input
                     id="meme-niche"
-                    placeholder="e.g., fitness, real estate, gym"
+                    placeholder="e.g., gym workouts, generate me memes for the gym culture"
                     value={memeNiche}
                     onChange={(e) => setMemeNiche(e.target.value)}
                     className={cn(
@@ -1451,29 +1455,28 @@ export function VideoProcessorModal({
                 </div>
               )}
 
-              {/* Niche suggestion chips - single line horizontal scroll */}
-              <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <div className="flex gap-2 min-w-max">
-                  {nicheSuggestions.map((niche) => (
-                    <button
-                      key={niche}
-                      type="button"
-                      onClick={() => {
-                        const prefix = memeNiche ? (memeNiche.trim().endsWith("#") ? "" : " ") : "";
-                        setMemeNiche(memeNiche + prefix + niche);
-                      }}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
-                        "border border-[#E7E5F7] bg-white/40 backdrop-blur-sm",
-                        "text-[#301B69] hover:bg-white/60 hover:border-[#7C7EF4]/40",
-                        "shadow-[0_2px_8px_rgba(0,0,0,0.08)]",
-                        prefersReducedMotion ? "" : "transition-all duration-200 active:scale-[0.98]"
-                      )}
-                    >
-                      {niche}
-                    </button>
-                  ))}
-                </div>
+              {/* Niche suggestion cards - visually appealing cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {nicheSuggestions.map((niche) => (
+                  <button
+                    key={niche.title}
+                    type="button"
+                    onClick={() => {
+                      setMemeNiche(`${niche.title} ${niche.description}`);
+                    }}
+                    className={cn(
+                      "group p-4 rounded-xl text-center flex flex-col items-center justify-center",
+                      "border border-[#7C7EF4]/20 bg-gradient-to-br from-white/60 to-[#7C7EF4]/5 backdrop-blur-sm",
+                      "hover:border-[#7C7EF4]/40 hover:from-white/80 hover:to-[#7C7EF4]/10",
+                      "shadow-[0_4px_20px_rgba(124,126,244,0.08)] hover:shadow-[0_8px_32px_rgba(124,126,244,0.15)]",
+                      prefersReducedMotion ? "" : "transition-all duration-300 active:scale-[0.98] hover:scale-[1.02] hover:-translate-y-1"
+                    )}
+                  >
+                    <div className="text-base font-semibold text-[#301B69] group-hover:text-[#7C7EF4] transition-colors">
+                      {niche.title}
+                    </div>
+                  </button>
+                ))}
               </div>
 
               {generatedMemes.length > 0 && (
@@ -1484,7 +1487,7 @@ export function VideoProcessorModal({
                     </h3>
                   </div>
 
-                  {/* Results - 5 column grid on desktop, horizontal scroll on smaller */}
+                  {/* Results - 3 column grid to match generated memes */}
                   <div className="overflow-x-auto overflow-y-hidden xl:overflow-x-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     <div className="meme-results-grid grid gap-4 pb-2">
                       {generatedMemes.map((meme) => (

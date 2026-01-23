@@ -11,26 +11,30 @@ pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD")
 
 
 def detect_text_area(frames, num_frames=10):
+    # Only scan first frame since text positioning is static - major performance optimization
+    if not frames:
+        return None
+
     x_min, y_min, x_max, y_max = np.inf, np.inf, 0, 0
     has_text = False
 
-    for i in range(min(num_frames, len(frames))):
-        gray = cv2.cvtColor(frames[i], cv2.COLOR_BGR2GRAY)
-        d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
-        for j in range(len(d["text"])):
-            try:
-                if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
-                    has_text = True
-                    x, y, w, h = (
-                        d["left"][j],
-                        d["top"][j],
-                        d["width"][j],
-                        d["height"][j],
-                    )
-                    x_min, y_min = min(x_min, x), min(y_min, y)
-                    x_max, y_max = max(x_max, x + w), max(y_max, y + h)
-            except ValueError:
-                continue
+    # Process only the first frame instead of multiple frames
+    gray = cv2.cvtColor(frames[0], cv2.COLOR_BGR2GRAY)
+    d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
+    for j in range(len(d["text"])):
+        try:
+            if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
+                has_text = True
+                x, y, w, h = (
+                    d["left"][j],
+                    d["top"][j],
+                    d["width"][j],
+                    d["height"][j],
+                )
+                x_min, y_min = min(x_min, x), min(y_min, y)
+                x_max, y_max = max(x_max, x + w), max(y_max, y + h)
+        except ValueError:
+            continue
 
     if not has_text:
         return None
@@ -141,9 +145,10 @@ def process_video(input_path, output_path):
     clip = VideoFileClip(input_path)
     fps = clip.fps
 
+    # Only extract first frame for text detection since positioning is static
     frames = []
     for i, f in enumerate(clip.iter_frames()):
-        if i >= 10:
+        if i >= 1:  # Only need first frame now
             break
         frames.append(cv2.cvtColor(f, cv2.COLOR_RGB2BGR))
 

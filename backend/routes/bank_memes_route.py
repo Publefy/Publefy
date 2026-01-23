@@ -1097,7 +1097,7 @@ def generate_memes_from_bank():
         
         balance = usage.get("points_balance", 0)
         
-        # Each batch generation of 5 videos costs 5 points (1 per video)
+        # Each batch generation costs points equal to the number of videos generated (1 per video)
         if balance < count:
             return jsonify({
                 "error": "Insufficient points",

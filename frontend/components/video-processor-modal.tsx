@@ -853,8 +853,8 @@ export function VideoProcessorModal({
       
       if (!isUnlimited) {
         const pointsBalance = usage?.points_balance || 0;
-        const count = 5; // Number of memes to generate
-        
+        const count = 3; // Number of memes to generate
+
         if (pointsBalance < count) {
           // Show insufficient points modal
           setPointsInfo({ balance: pointsBalance, required: count });
@@ -875,7 +875,7 @@ export function VideoProcessorModal({
       industry: userInput,
       keyword: "",
       niche: "",
-      count: 5,
+      count: 3,
       allowRepeats,
       onePromptForAll,
       profileId: profile?.id || undefined,
@@ -1298,7 +1298,7 @@ export function VideoProcessorModal({
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-2xl font-bold text-[#301B69]">Meme Bank</DialogTitle>
           <DialogDescription className="text-[#5A5192]">
-            Generate 5 memes from our bank.
+            Generate 3 memes from our bank.
           </DialogDescription>
         </DialogHeader>
 
@@ -1391,7 +1391,7 @@ export function VideoProcessorModal({
                         : "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(91,12,213,0.25)] active:scale-[0.99]"
                     )}
                   >
-                    {isGeneratingMemes ? "Generating..." : "Generate 5 Memes"}
+                    {isGeneratingMemes ? "Generating..." : "Generate 3 Memes"}
                   </Button>
                 </div>
               </div>
@@ -1403,7 +1403,7 @@ export function VideoProcessorModal({
                 >
                   <div className="flex items-center gap-4 justify-between">
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-[#301B69]">Generating 5 memes...</div>
+                      <div className="text-sm font-semibold text-[#301B69]">Generating 3 memes...</div>
                       <div className="text-xs text-[#5A5192] truncate">
                         {clampedFakeProgress >= 99
                           ? "Finalizing (may take longer than usual)..."
@@ -1643,7 +1643,7 @@ export function VideoProcessorModal({
               {/* Debug info */}
               {!isGeneratingMemes && generatedMemes.length === 0 && (
                 <div className="text-sm text-[#5A5192] text-center py-8">
-                  No memes generated yet. Click "Generate 5 Memes" to create memes.
+                  No memes generated yet. Click "Generate 3 Memes" to create memes.
                 </div>
               )}
             </div>

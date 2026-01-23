@@ -6,6 +6,7 @@ import numpy as np
 import shutil
 import pytesseract
 import json
+import subprocess
 from urllib.parse import quote, urlparse
 
 from bson import ObjectId
@@ -249,8 +250,6 @@ def finalize_video():
         temp_files.append(original_path)
         cleaned_path = NamedTemporaryFile(delete=False, suffix=ext).name
         temp_files.append(cleaned_path)
-        output_temp = NamedTemporaryFile(delete=False, suffix=".mp4").name
-        temp_files.append(output_temp)
         final_path = f"outputs/processed_{os.path.basename(cleaned_path)}"
 
         with open(original_path, "wb") as f_out:
@@ -274,38 +273,53 @@ def finalize_video():
         shutil.copyfile(original_path, cleaned_path)
 
         try:
+            # Get video dimensions
             clip = VideoFileClip(cleaned_path)
-            fps = clip.fps
             width, height = clip.w, clip.h
-            writer = cv2.VideoWriter(
-                output_temp,
-                cv2.VideoWriter_fourcc(*"mp4v"),
-                fps,
-                (int(width), int(height)),
-            )
-
-            for frame in clip.iter_frames():
-                bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                cv2.rectangle(bgr, (x, y), (x + w, y + h), background_color, -1)
-                overlayed = overlay_text_on_frame(bgr, caption, text_area, color=text_color)
-                writer.write(overlayed)
-
-            writer.release()
-            clip.reader.close()
             clip.close()
+            
+            # Create overlay image ONCE (not per frame) - much faster!
+            overlay_img = NamedTemporaryFile(delete=False, suffix=".png").name
+            temp_files.append(overlay_img)
+            
+            # Create black background overlay with same dimensions as video
+            overlay_frame = np.zeros((height, width, 3), dtype=np.uint8)
+            bgr_overlay = cv2.cvtColor(overlay_frame, cv2.COLOR_RGB2BGR)
+            
+            # Draw black rectangle in text area
+            cv2.rectangle(bgr_overlay, (x, y), (x + w, y + h), background_color, -1)
+            
+            # Render text on overlay
+            text_overlay = overlay_text_on_frame(bgr_overlay, caption, text_area, color=text_color)
+            cv2.imwrite(overlay_img, text_overlay)
+            
+            # Ensure output directory exists
+            os.makedirs(os.path.dirname(final_path) if os.path.dirname(final_path) else ".", exist_ok=True)
+            
+            # Use ffmpeg to overlay on ALL frames at once (5-10x faster than frame-by-frame)
+            # Write directly to final_path (ffmpeg handles both video overlay and audio in one pass)
+            subprocess.run([
+                "ffmpeg", "-y",
+                "-i", cleaned_path,
+                "-i", overlay_img,
+                "-filter_complex", f"[0:v][1:v]overlay={x}:{y}[v]",
+                "-map", "[v]",
+                "-map", "0:a?",  # Copy audio if exists
+                "-c:v", "libx264",
+                "-c:a", "aac",
+                "-preset", "fast",
+                final_path
+            ], check=True, capture_output=True, stderr=subprocess.PIPE)
+            
+        except subprocess.CalledProcessError as e:
+            sentry_sdk.capture_exception(e)
+            error_msg = e.stderr.decode('utf-8', errors='ignore') if e.stderr else str(e)
+            sentry_sdk.capture_message(f"Finalize: Error during video overlay: {error_msg}", level="error")
+            return jsonify({"error": "Failed during video overlay: " + str(e)}), 500
         except Exception as e:
             sentry_sdk.capture_exception(e)
             sentry_sdk.capture_message("Finalize: Error during video overlay", level="error")
             return jsonify({"error": "Failed during video overlay: " + str(e)}), 500
-
-        try:
-            final = VideoFileClip(output_temp).with_audio(VideoFileClip(cleaned_path).audio)
-            final.write_videofile(final_path, codec="libx264", audio_codec="aac")
-            final.close()
-        except Exception as e:
-            sentry_sdk.capture_exception(e)
-            sentry_sdk.capture_message("Finalize: Error during audio muxing", level="error")
-            return jsonify({"error": "Failed during audio muxing: " + str(e)}), 500
 
         # --- NEW: make a thumbnail JPEG from the final video
         thumb_temp = NamedTemporaryFile(delete=False, suffix=".jpg").name

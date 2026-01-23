@@ -183,51 +183,35 @@ def _render_with_caption(src_path: str, caption: str) -> tuple[str, tuple]:
     text_color = (255, 255, 255)
     text_area = (x, y, w, h)
 
-    # Get video dimensions
+    # process frames
     clip = VideoFileClip(src_path)
+    fps = clip.fps
     width, height = clip.w, clip.h
+
+    output_temp = NamedTemporaryFile(delete=False, suffix=".mp4").name
+    writer = cv2.VideoWriter(
+        output_temp, cv2.VideoWriter_fourcc(*"mp4v"), fps, (int(width), int(height))
+    )
+
+    for frame in clip.iter_frames():
+        bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        cv2.rectangle(bgr, (x, y), (x + w, y + h), background_color, -1)
+        overlayed = _overlay_text_on_frame(bgr, caption, text_area, color=text_color)
+        writer.write(overlayed)
+
+    writer.release()
+    clip.reader.close()
     clip.close()
 
-    # Create overlay image ONCE (not per frame) - much faster!
-    overlay_img = NamedTemporaryFile(delete=False, suffix=".png").name
-    
+    # reattach original audio
+    final_path = NamedTemporaryFile(delete=False, suffix=".mp4").name
     try:
-        # Create black background overlay with same dimensions as video
-        overlay_frame = np.zeros((height, width, 3), dtype=np.uint8)
-        bgr_overlay = cv2.cvtColor(overlay_frame, cv2.COLOR_RGB2BGR)
-        
-        # Draw black rectangle in text area
-        cv2.rectangle(bgr_overlay, (x, y), (x + w, y + h), background_color, -1)
-        
-        # Render text on overlay
-        text_overlay = _overlay_text_on_frame(bgr_overlay, caption, text_area, color=text_color)
-        cv2.imwrite(overlay_img, text_overlay)
-        
-        # Use ffmpeg to overlay on ALL frames at once (5-10x faster than frame-by-frame)
-        output_temp = NamedTemporaryFile(delete=False, suffix=".mp4").name
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-i", src_path,
-            "-i", overlay_img,
-            "-filter_complex", f"[0:v][1:v]overlay={x}:{y}[v]",
-            "-map", "[v]",
-            "-map", "0:a?",  # Copy audio if exists
-            "-c:v", "libx264",
-            "-c:a", "aac",
-            "-preset", "fast",
-            output_temp
-        ], check=True, capture_output=True, stderr=subprocess.PIPE)
-        
-        # Final output path
-        final_path = NamedTemporaryFile(delete=False, suffix=".mp4").name
-        
-        # Move temp to final (ffmpeg already handled audio)
-        shutil.move(output_temp, final_path)
-        
+        final = VideoFileClip(output_temp).with_audio(VideoFileClip(src_path).audio)
+        final.write_videofile(final_path, codec="libx264", audio_codec="aac")
+        final.close()
     finally:
-        # Cleanup overlay image
         try:
-            os.remove(overlay_img)
+            os.remove(output_temp)
         except Exception:
             pass
 

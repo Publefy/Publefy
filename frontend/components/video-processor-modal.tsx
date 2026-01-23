@@ -1301,10 +1301,10 @@ export function VideoProcessorModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* keep max height, but allow inner content to scroll */}
       <DialogContent className="w-[95vw] max-w-[680px] p-0 max-h-[80vh] flex flex-col">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-2xl font-bold text-[#301B69]">Meme Bank</DialogTitle>
-          <DialogDescription className="text-[#5A5192]">
-            Generate 3 memes from our bank.
+        <DialogHeader className="p-6 pb-4 border-b border-[#E7E5F7]/40">
+          <DialogTitle className="text-xl font-semibold text-[#301B69]">Meme Bank</DialogTitle>
+          <DialogDescription className="text-sm text-[#5A5192] mt-1">
+            Generate memes from our curated collection
           </DialogDescription>
         </DialogHeader>
 
@@ -1314,7 +1314,7 @@ export function VideoProcessorModal({
         <div className="p-6 flex-1 overflow-y-auto min-h-0 flex flex-col meme-bank-scroll">
           <style>{`
             .meme-bank-scroll::-webkit-scrollbar {
-              width: 6px;
+              width: 5px;
             }
             .meme-bank-scroll::-webkit-scrollbar-track {
               background: transparent;
@@ -1340,17 +1340,6 @@ export function VideoProcessorModal({
                 grid-template-columns: repeat(3, minmax(100px, 1fr)) !important;
               }
             }
-            @keyframes pulse-soft {
-              0%, 100% {
-                opacity: 0.5;
-              }
-              50% {
-                opacity: 1;
-              }
-            }
-            .animate-pulse-soft {
-              animation: pulse-soft 2s ease-in-out infinite;
-            }
             /* Hide broken image icons */
             .meme-results-grid img {
               color: transparent;
@@ -1366,91 +1355,57 @@ export function VideoProcessorModal({
           <div className="flex-1 flex flex-col">
             <div className="space-y-4">
               <div ref={resultsRef} />
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                 <div className="flex-1">
-                  <Label htmlFor="meme-niche" className="text-sm font-medium text-[#301B69]">
-                    Niche / Topic
+                  <Label htmlFor="meme-niche" className="text-sm font-medium text-[#301B69] mb-1.5">
+                    Topic
                   </Label>
                   <Input
                     id="meme-niche"
-                    placeholder="e.g., gym workouts, generate me memes for the gym culture"
+                    placeholder="e.g., gym, real estate, food"
                     value={memeNiche}
                     onChange={(e) => setMemeNiche(e.target.value)}
                     className={cn(
-                      "mt-1 h-10 border-[#E7E5F7] focus:border-[#7C7EF4] focus:ring-[#7C7EF4]/20",
+                      "h-10 border-[#E7E5F7] focus:border-[#7C7EF4] focus:ring-[#7C7EF4]/20",
                       prefersReducedMotion ? "" : "transition-all duration-200"
                     )}
                     onKeyDown={(e) => e.key === "Enter" && handleAutoGenerateRenderedMemes()}
                   />
                 </div>
 
-                <div className="flex items-center sm:pt-6">
+                <div className="flex items-center">
                   <Button
                     onClick={handleAutoGenerateRenderedMemes}
                     disabled={isGeneratingMemes}
                     className={cn(
-                      "rounded-full h-10 text-sm font-semibold text-white",
+                      "h-10 px-6 text-sm font-semibold text-white",
                       "bg-gradient-to-b from-[#7C7EF4] to-[#6F80F0]",
                       "shadow-[0_8px_24px_rgba(91,12,213,0.20),inset_0_8px_10px_rgba(255,255,255,0.22)]",
-                      prefersReducedMotion
-                        ? ""
-                        : "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(91,12,213,0.25)] active:scale-[0.99]"
+                      "disabled:opacity-50",
+                      prefersReducedMotion ? "" : "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(91,12,213,0.25)] active:scale-[0.99]"
                     )}
                   >
-                    {isGeneratingMemes ? "Generating..." : "Generate 3 Memes"}
+                    {isGeneratingMemes ? "Generating..." : "Generate"}
                   </Button>
                 </div>
               </div>
 
               {isGeneratingMemes && (
                 <div
-                  className="rounded-2xl border border-[#E7E5F7] bg-white/70 backdrop-blur-sm p-4 shadow-[0_4px_16px_rgba(27,13,63,0.08)]"
+                  className="rounded-lg border border-[#E7E5F7] bg-white/70 backdrop-blur-sm p-4"
                   aria-live="polite"
                 >
-                  <div className="flex items-center gap-4 justify-between">
+                  <div className="flex items-center gap-3 justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-[#301B69]">Generating 3 memes...</div>
-                      <div className="text-xs text-[#5A5192] truncate">
-                        {clampedFakeProgress >= 99
-                          ? "Finalizing (may take longer than usual)..."
-                          : `Avg ~${Math.max(1, Math.round(Math.max(averageGenerationMs, MIN_FAKE_DURATION_MS) / 1000))}s • please stay on this tab`}
+                      <div className="text-sm font-semibold text-[#301B69]">Generating memes...</div>
+                      <div className="text-xs text-[#5A5192]">
+                        {clampedFakeProgress >= 99 ? "Finalizing..." : `${clampedFakeProgress}%`}
                       </div>
                     </div>
-                    <svg viewBox="0 0 36 36" className="w-12 h-12">
-                      <path
-                        className="text-[#E7E5F7]"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        fill="none"
-                        d="M18 2.0845
-                             a 15.9155 15.9155 0 0 1 0 31.831
-                             a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-[#7C7EF4]"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        fill="none"
-                        strokeDasharray="100"
-                        strokeDashoffset={100 - clampedFakeProgress}
-                        d="M18 2.0845
-                             a 15.9155 15.9155 0 0 1 0 31.831
-                             a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <text
-                        x="18"
-                        y="20.5"
-                        textAnchor="middle"
-                        className="text-[9px] font-semibold fill-[#301B69]"
-                      >
-                        {clampedFakeProgress}%
-                      </text>
-                    </svg>
                   </div>
-                  <div className="mt-3 h-3 w-full rounded-full bg-[#E7E5F7] overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-[#E7E5F7] overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#7C7EF4] to-[#5E46D8] transition-[width] duration-300"
+                      className="h-full bg-gradient-to-r from-[#7C7EF4] to-[#6F80F0] transition-[width] duration-300"
                       style={{ width: `${clampedFakeProgress}%` }}
                     />
                   </div>
@@ -1458,23 +1413,21 @@ export function VideoProcessorModal({
               )}
 
               {/* Niche suggestion chips - single row, compact */}
-              <div className="flex flex-row flex-wrap gap-1.5">
+              <div className="flex flex-row flex-wrap gap-2">
                 {nicheSuggestions.map((niche) => (
                   <button
                     key={niche.title}
                     type="button"
                     onClick={() => {
-                      setMemeNiche(`${niche.title} ${niche.description}`);
+                      setMemeNiche(niche.title);
                     }}
                     className={cn(
-                      "group px-3 py-1.5 rounded-lg text-center flex flex-col items-center justify-center",
-                      "border border-[#7C7EF4]/20 bg-gradient-to-br from-white/60 to-[#7C7EF4]/5 backdrop-blur-sm",
-                      "hover:border-[#7C7EF4]/40 hover:from-white/80 hover:to-[#7C7EF4]/10",
-                      "shadow-[0_2px_8px_rgba(124,126,244,0.06)] hover:shadow-[0_2px_12px_rgba(124,126,244,0.12)]",
-                      prefersReducedMotion ? "" : "transition-all duration-200 active:scale-[0.99]"
+                      "px-3 py-1.5 rounded-lg text-center",
+                      "border border-[#7C7EF4]/20 bg-white/60 backdrop-blur-sm hover:border-[#7C7EF4]/40 hover:bg-white/80",
+                      prefersReducedMotion ? "" : "transition-all duration-200"
                     )}
                   >
-                    <span className="text-xs font-medium text-[#301B69] group-hover:text-[#7C7EF4] transition-colors">
+                    <span className="text-xs font-medium text-[#301B69]">
                       {niche.title}
                     </span>
                   </button>
@@ -1494,21 +1447,20 @@ export function VideoProcessorModal({
                         >
                           <div
                             className={cn(
-                              "rounded-[12px] overflow-hidden border bg-white/60 backdrop-blur-sm flex flex-col h-full",
-                              "shadow-[0_4px_12px_rgba(27,13,63,0.08)]",
+                              "rounded-lg overflow-hidden border bg-white/60 backdrop-blur-sm flex flex-col h-full",
                               selectedMemes.has(meme.id)
                                 ? "ring-2 ring-[#7C7EF4] border-[#7C7EF4]"
-                                : "border-[#E7E5F7]",
-                              prefersReducedMotion ? "" : "transition-all duration-200 hover:shadow-[0_6px_16px_rgba(27,13,63,0.12)]"
+                                : "border-[#E7E5F7] hover:border-[#7C7EF4]/40",
+                              prefersReducedMotion ? "" : "transition-all duration-200"
                             )}
                           >
                             {/* Loading icon at the top of the card */}
                             {memeLoadingStates.get(meme.id) && (
                               <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black/70 backdrop-blur-sm">
+                                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm">
                                   <Loader2
                                     className={cn(
-                                      "w-4 h-4 text-white",
+                                      "w-4 h-4 text-[#7C7EF4]",
                                       prefersReducedMotion ? "" : "animate-spin"
                                     )}
                                   />
@@ -1549,7 +1501,7 @@ export function VideoProcessorModal({
                                   <div
                                     className={cn(
                                       "absolute inset-0 bg-gradient-to-br from-[#F5F0FF] to-[#E8E0F5] pointer-events-none",
-                                      prefersReducedMotion ? "opacity-60" : "animate-pulse-soft"
+                                      prefersReducedMotion ? "opacity-60" : "animate-pulse"
                                     )}
                                     style={{ zIndex: 1 }}
                                   />
@@ -1566,11 +1518,11 @@ export function VideoProcessorModal({
                                   title="Play video preview"
                                 >
                                   <span className={cn(
-                                    "flex items-center justify-center w-12 h-12 rounded-full",
-                                    "bg-black/60 text-white opacity-80 hover:opacity-100",
+                                    "flex items-center justify-center w-10 h-10 rounded-full",
+                                    "bg-white/90 backdrop-blur-sm text-[#7C7EF4] opacity-90 hover:opacity-100",
                                     prefersReducedMotion ? "" : "transition-opacity duration-200"
                                   )}>
-                                    <Play className="w-6 h-6" />
+                                    <Play className="w-5 h-5" />
                                   </span>
                                 </button>
 
@@ -1578,10 +1530,10 @@ export function VideoProcessorModal({
                                 <button
                                   type="button"
                                   className={cn(
-                                    "absolute top-2 left-2 inline-flex items-center justify-center rounded-full p-1.5 text-white z-20",
+                                    "absolute top-2 left-2 inline-flex items-center justify-center rounded-md p-1.5 text-white z-20",
                                     selectedMemes.has(meme.id)
                                       ? "bg-[#7C7EF4] opacity-100"
-                                      : "bg-black/60 opacity-0 group-hover:opacity-100",
+                                      : "bg-white/90 backdrop-blur-sm text-[#7C7EF4] opacity-0 group-hover:opacity-100",
                                     prefersReducedMotion ? "" : "transition-opacity duration-200"
                                   )}
                                   onClick={(e) => {
@@ -1599,17 +1551,17 @@ export function VideoProcessorModal({
                             </div>
 
                             {/* Meme title/caption - improved typography with fixed height */}
-                            <div className="px-2 pt-2 pb-4 min-h-[44px] flex items-start flex-shrink-0">
+                            <div className="px-3 pt-2 pb-3 min-h-[44px] flex items-start flex-shrink-0">
                               {meme.text ? (
-                                <div className="text-sm font-semibold text-[#301B69] line-clamp-2 leading-snug">
+                                <div className="text-xs font-semibold text-[#301B69] line-clamp-2 leading-snug">
                                   {meme.text}
                                 </div>
                               ) : meme.filename && !meme.filename.match(/^[a-f0-9]{32,}$/i) ? (
-                                <div className="text-sm font-semibold text-[#301B69] line-clamp-2 leading-snug">
+                                <div className="text-xs font-semibold text-[#301B69] line-clamp-2 leading-snug">
                                   {meme.filename}
                                 </div>
                               ) : (
-                                <div className="text-sm font-semibold text-[#301B69] line-clamp-2 leading-snug opacity-0">
+                                <div className="text-xs font-semibold text-[#301B69] line-clamp-2 leading-snug opacity-0">
                                   {/* Placeholder to maintain height */}
                                   &nbsp;
                                 </div>
@@ -1620,7 +1572,7 @@ export function VideoProcessorModal({
                           </div>
 
                           {regeneratingMemeId === meme.id && (
-                            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center rounded-[12px]">
+                            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center rounded-lg">
                               <div className="text-sm text-[#301B69] font-medium">Regenerating...</div>
                             </div>
                           )}
@@ -1641,8 +1593,8 @@ export function VideoProcessorModal({
 
               {/* Debug info */}
               {!isGeneratingMemes && generatedMemes.length === 0 && (
-                <div className="text-sm text-[#5A5192] text-center py-8">
-                  No memes generated yet. Click "Generate 3 Memes" to create memes.
+                <div className="text-sm text-[#5A5192] text-center py-12">
+                  No memes generated yet. Enter a topic and click Generate.
                 </div>
               )}
             </div>
@@ -1652,22 +1604,22 @@ export function VideoProcessorModal({
           <div>
             {videoSummary && (
               <div className="mt-6">
-                <Label className="text-base font-medium text-[#301B69]">Summary</Label>
-                <div className="mt-2 p-4 bg-white/40 backdrop-blur-sm rounded-[12px] border border-[#E7E5F7]">
+                <Label className="text-sm font-medium text-[#301B69]">Summary</Label>
+                <div className="mt-2 p-4 bg-white/40 backdrop-blur-sm rounded-lg border border-[#E7E5F7]">
                   <p className="text-sm text-[#5A5192] whitespace-pre-line">{videoSummary}</p>
                 </div>
               </div>
             )}
             {memeOptions.length > 0 && (
               <div className="mt-6">
-                <Label className="text-base font-medium mb-3 block text-[#301B69]">Funny Meme Options</Label>
+                <Label className="text-sm font-medium mb-3 block text-[#301B69]">Meme Options</Label>
                 <div className="grid grid-cols-1 gap-2 max-h-[220px] overflow-y-auto pr-2">
                   {memeOptions.map((option, idx) => (
                     <Button
                       key={idx}
                       variant="outline"
                       className={cn(
-                        "justify-start h-auto py-2 px-3 text-left rounded-[12px]",
+                        "justify-start h-auto py-2 px-3 text-left rounded-lg",
                         "border-[#E7E5F7] bg-white/40 backdrop-blur-sm",
                         selectedMemeOption === option
                           ? "border-[#7C7EF4] bg-[#7C7EF4]/10 text-[#301B69]"
@@ -1692,19 +1644,17 @@ export function VideoProcessorModal({
 
         {/* Footer - smaller, only Add to Library */}
         {generatedMemes.length > 0 && (
-          <div className="border-t border-[#E7E5F7]/40 bg-white/60 backdrop-blur-sm px-4 py-2.5 shrink-0">
+          <div className="border-t border-[#E7E5F7]/40 bg-white/60 backdrop-blur-sm px-6 py-4 shrink-0">
             <Button
               type="button"
               onClick={handleScheduleNow}
               disabled={selectedMemes.size === 0 || scheduling}
               className={cn(
-                "w-full rounded-full h-9 text-sm font-semibold text-white",
+                "w-full h-10 text-sm font-semibold text-white",
                 "bg-gradient-to-b from-[#7C7EF4] to-[#6F80F0]",
                 "shadow-[0_8px_24px_rgba(91,12,213,0.20),inset_0_8px_10px_rgba(255,255,255,0.22)]",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
-                prefersReducedMotion
-                  ? ""
-                  : "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(91,12,213,0.25)] active:scale-[0.99]"
+                prefersReducedMotion ? "" : "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(91,12,213,0.25)] active:scale-[0.99]"
               )}
             >
               <Calendar className="w-4 h-4 mr-2" />
@@ -1751,16 +1701,16 @@ export function VideoProcessorModal({
       <Dialog open={insufficientPointsOpen} onOpenChange={setInsufficientPointsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-[#301B69]">
+            <DialogTitle className="text-lg font-semibold text-[#301B69]">
               Insufficient Credits
             </DialogTitle>
-            <DialogDescription className="text-[#5A5192] pt-2">
+            <DialogDescription className="text-[#5A5192] pt-1">
               You don't have enough credits to generate memes.
             </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
-            <div className="bg-[#F5F4F9] rounded-lg p-4 mb-4">
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 mb-4 border border-[#E7E5F7]">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-[#5A5192]">Credits Required:</span>
                 <span className="text-sm font-semibold text-[#301B69]">{pointsInfo?.required || 5}</span>
@@ -1772,7 +1722,7 @@ export function VideoProcessorModal({
             </div>
             
             <p className="text-sm text-[#5A5192] text-center">
-              Upgrade your plan to get more credits and unlock unlimited meme generation.
+              Upgrade your plan to get more credits.
             </p>
           </div>
 
@@ -1780,7 +1730,7 @@ export function VideoProcessorModal({
             <Button
               variant="outline"
               onClick={() => setInsufficientPointsOpen(false)}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto border-[#E7E5F7]"
             >
               Cancel
             </Button>

@@ -429,7 +429,9 @@ export function VideoProcessorModal({
   const nicheSuggestions = [
     { title: "Gym", description: "workouts, generate me memes for the gym culture" },
     { title: "Real Estate", description: "deals, generate me memes for property investors" },
-    { title: "Food", description: "recipes, generate me memes for cooking enthusiasts" }
+    { title: "Food", description: "recipes, generate me memes for cooking enthusiasts" },
+    { title: "Marketing", description: "ads and campaigns, generate me memes for marketers" },
+    { title: "Travel", description: "trips and adventures, generate me memes for travelers" }
   ];
   const [resumeMeta, setResumeMeta] = useState<{ sourceType?: string; fileName?: string; selectedVideoId?: string; selectedMemes?: string[] } | null>(null);
 
@@ -1455,8 +1457,8 @@ export function VideoProcessorModal({
                 </div>
               )}
 
-              {/* Niche suggestion cards - visually appealing cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Niche suggestion chips - single row, compact */}
+              <div className="flex flex-row flex-wrap gap-1.5">
                 {nicheSuggestions.map((niche) => (
                   <button
                     key={niche.title}
@@ -1465,16 +1467,16 @@ export function VideoProcessorModal({
                       setMemeNiche(`${niche.title} ${niche.description}`);
                     }}
                     className={cn(
-                      "group p-4 rounded-xl text-center flex flex-col items-center justify-center",
+                      "group px-3 py-1.5 rounded-lg text-center flex flex-col items-center justify-center",
                       "border border-[#7C7EF4]/20 bg-gradient-to-br from-white/60 to-[#7C7EF4]/5 backdrop-blur-sm",
                       "hover:border-[#7C7EF4]/40 hover:from-white/80 hover:to-[#7C7EF4]/10",
-                      "shadow-[0_4px_20px_rgba(124,126,244,0.08)] hover:shadow-[0_8px_32px_rgba(124,126,244,0.15)]",
-                      prefersReducedMotion ? "" : "transition-all duration-300 active:scale-[0.98] hover:scale-[1.02] hover:-translate-y-1"
+                      "shadow-[0_2px_8px_rgba(124,126,244,0.06)] hover:shadow-[0_2px_12px_rgba(124,126,244,0.12)]",
+                      prefersReducedMotion ? "" : "transition-all duration-200 active:scale-[0.99]"
                     )}
                   >
-                    <div className="text-base font-semibold text-[#301B69] group-hover:text-[#7C7EF4] transition-colors">
+                    <span className="text-xs font-medium text-[#301B69] group-hover:text-[#7C7EF4] transition-colors">
                       {niche.title}
-                    </div>
+                    </span>
                   </button>
                 ))}
               </div>

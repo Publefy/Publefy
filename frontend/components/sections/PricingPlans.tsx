@@ -44,7 +44,7 @@ export default function PricingPlans() {
           </div>
 
           {/* cards */}
-          <div className="mx-auto mt-3 sm:mt-4 md:mt-5 grid max-w-[500px] gap-3 sm:gap-4 grid-cols-1">
+          <div className="mx-auto mt-3 sm:mt-4 md:mt-5 grid max-w-[500px] gap-3 sm:gap-4 grid-cols-2">
             <PriceCard
               badge="For Starters"
               title="Free"

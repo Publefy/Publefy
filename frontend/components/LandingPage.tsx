@@ -13,6 +13,7 @@ import {
 
 import { NavBar } from "./nav-bar";
 import HeroSection from "./hero-section";
+import MemeMarquee from "./sections/MemeMarquee";
 import AIMemeGeneration from "./sections/meme_generation_section";
 import DirectSocialPosting from "./sections/DirectSocialPosting";
 import HowItWorks from "./sections/HowItWorks";
@@ -224,9 +225,10 @@ export default function LandingPage() {
             }
           />
         </motion.div>
-
       </div>
 
+      {/* MEME MARQUEE LOOP */}
+      <MemeMarquee />
 
       {/* Content sections */}
       <SectionReveal id="features">

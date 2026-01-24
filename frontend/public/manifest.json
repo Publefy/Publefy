@@ -1,0 +1,35 @@
+{
+  "name": "Publefy - AI Meme Generator",
+  "short_name": "Publefy",
+  "description": "AI-powered meme generator that creates viral memes from videos and automatically schedules Instagram posts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#301B69",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/publefy-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/publefy-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social", "productivity", "entertainment"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Generate Memes",
+      "short_name": "Generate",
+      "description": "Create AI-powered memes",
+      "url": "/?auth=login",
+      "icons": [{ "src": "/publefy-logo.png", "sizes": "96x96" }]
+    }
+  ]
+}

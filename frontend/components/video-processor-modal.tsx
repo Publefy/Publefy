@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { X, Zap, Calendar, Maximize2, Play, Check, Loader2 } from "lucide-react";
+import { X, Zap, Calendar, Maximize2, Play, Check, Loader2, Dumbbell, UtensilsCrossed, Heart, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -427,11 +427,46 @@ export function VideoProcessorModal({
 
   // Niche suggestions
   const nicheSuggestions = [
-    { title: "Gym", description: "workouts, generate me memes for the gym culture" },
-    { title: "Real Estate", description: "deals, generate me memes for property investors" },
-    { title: "Food", description: "recipes, generate me memes for cooking enthusiasts" },
-    { title: "Marketing", description: "ads and campaigns, generate me memes for marketers" },
-    { title: "Travel", description: "trips and adventures, generate me memes for travelers" }
+    { 
+      title: "Gym", 
+      description: "workouts, generate me memes for the gym culture",
+      icon: Dumbbell,
+      gradient: "from-orange-500 to-red-500",
+      bgGradient: "from-orange-50 to-red-50",
+      textColor: "text-orange-700",
+      borderColor: "border-orange-200",
+      hoverBorder: "hover:border-orange-300"
+    },
+    { 
+      title: "Food", 
+      description: "recipes, generate me memes for cooking enthusiasts",
+      icon: UtensilsCrossed,
+      gradient: "from-amber-500 to-yellow-500",
+      bgGradient: "from-amber-50 to-yellow-50",
+      textColor: "text-amber-700",
+      borderColor: "border-amber-200",
+      hoverBorder: "hover:border-amber-300"
+    },
+    { 
+      title: "Life", 
+      description: "lifestyle and daily moments, generate me memes for everyday life",
+      icon: Heart,
+      gradient: "from-pink-500 to-rose-500",
+      bgGradient: "from-pink-50 to-rose-50",
+      textColor: "text-pink-700",
+      borderColor: "border-pink-200",
+      hoverBorder: "hover:border-pink-300"
+    },
+    { 
+      title: "Marketing", 
+      description: "ads and campaigns, generate me memes for marketers",
+      icon: TrendingUp,
+      gradient: "from-blue-500 to-indigo-500",
+      bgGradient: "from-blue-50 to-indigo-50",
+      textColor: "text-blue-700",
+      borderColor: "border-blue-200",
+      hoverBorder: "hover:border-blue-300"
+    }
   ];
   const [resumeMeta, setResumeMeta] = useState<{ sourceType?: string; fileName?: string; selectedVideoId?: string; selectedMemes?: string[] } | null>(null);
 
@@ -1300,18 +1335,15 @@ export function VideoProcessorModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* keep max height, but allow inner content to scroll */}
-      <DialogContent className="w-[95vw] max-w-[680px] p-0 max-h-[80vh] flex flex-col">
-        <DialogHeader className="p-6 pb-4 border-b border-[#E7E5F7]/40">
-          <DialogTitle className="text-xl font-semibold text-[#301B69]">Meme Bank</DialogTitle>
-          <DialogDescription className="text-sm text-[#5A5192] mt-1">
-            Generate memes from our curated collection
-          </DialogDescription>
+      <DialogContent className="w-[95vw] max-w-[680px] p-0 max-h-[85vh] sm:max-h-[80vh] flex flex-col bg-white border border-gray-200/60 shadow-xl rounded-xl overflow-hidden">
+        <DialogHeader className="px-5 sm:px-6 py-4 sm:py-5 border-b border-gray-100">
+          <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900 tracking-tight">Meme Bank</DialogTitle>
         </DialogHeader>
 
         {/* Removed resume banner per UX request */}
 
         {/* body - scrollable area */}
-        <div className="p-6 flex-1 overflow-y-auto min-h-0 flex flex-col meme-bank-scroll">
+        <div className="px-5 sm:px-6 py-4 sm:py-5 flex-1 overflow-y-auto min-h-0 flex flex-col meme-bank-scroll">
           <style>{`
             .meme-bank-scroll::-webkit-scrollbar {
               width: 5px;
@@ -1320,15 +1352,15 @@ export function VideoProcessorModal({
               background: transparent;
             }
             .meme-bank-scroll::-webkit-scrollbar-thumb {
-              background: rgba(124, 126, 244, 0.3);
+              background: rgba(0, 0, 0, 0.2);
               border-radius: 3px;
             }
             .meme-bank-scroll::-webkit-scrollbar-thumb:hover {
-              background: rgba(124, 126, 244, 0.5);
+              background: rgba(0, 0, 0, 0.3);
             }
             .meme-bank-scroll {
               scrollbar-width: thin;
-              scrollbar-color: rgba(124, 126, 244, 0.3) transparent;
+              scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
             }
             @media (min-width: 640px) {
               .meme-results-grid {
@@ -1353,36 +1385,38 @@ export function VideoProcessorModal({
           `}</style>
           {/* MEME BANK */}
           <div className="flex-1 flex flex-col">
-            <div className="space-y-4">
+            <div className="space-y-4 sm:space-y-5">
               <div ref={resultsRef} />
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-                <div className="flex-1">
-                  <Label htmlFor="meme-niche" className="text-sm font-medium text-[#301B69] mb-1.5">
-                    Topic
-                  </Label>
-                  <Input
-                    id="meme-niche"
-                    placeholder="e.g., gym, real estate, food"
-                    value={memeNiche}
-                    onChange={(e) => setMemeNiche(e.target.value)}
-                    className={cn(
-                      "h-10 border-[#E7E5F7] focus:border-[#7C7EF4] focus:ring-[#7C7EF4]/20",
-                      prefersReducedMotion ? "" : "transition-all duration-200"
-                    )}
-                    onKeyDown={(e) => e.key === "Enter" && handleAutoGenerateRenderedMemes()}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="meme-niche" className="text-xs sm:text-sm font-medium text-gray-700 mb-2 block">
+                  Topic
+                </Label>
+                <div className="flex flex-row gap-3 items-end">
+                  <div className="flex-1">
+                    <Input
+                      id="meme-niche"
+                      placeholder="Enter a topic..."
+                      value={memeNiche}
+                      onChange={(e) => setMemeNiche(e.target.value)}
+                      className={cn(
+                        "h-10 sm:h-11 border-gray-200 bg-white text-gray-900 placeholder:text-gray-400",
+                        "focus:border-gray-400 focus:ring-1 focus:ring-gray-400",
+                        "text-sm sm:text-base",
+                        prefersReducedMotion ? "" : "transition-all duration-150"
+                      )}
+                      onKeyDown={(e) => e.key === "Enter" && handleAutoGenerateRenderedMemes()}
+                    />
+                  </div>
 
-                <div className="flex items-center">
                   <Button
                     onClick={handleAutoGenerateRenderedMemes}
                     disabled={isGeneratingMemes}
                     className={cn(
-                      "h-10 px-6 text-sm font-semibold text-white",
-                      "bg-gradient-to-b from-[#7C7EF4] to-[#6F80F0]",
-                      "shadow-[0_8px_24px_rgba(91,12,213,0.20),inset_0_8px_10px_rgba(255,255,255,0.22)]",
-                      "disabled:opacity-50",
-                      prefersReducedMotion ? "" : "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(91,12,213,0.25)] active:scale-[0.99]"
+                      "h-10 sm:h-11 px-5 sm:px-6 text-sm font-medium text-white shrink-0",
+                      "bg-gray-900 hover:bg-gray-800",
+                      "disabled:opacity-50 disabled:cursor-not-allowed",
+                      "shadow-sm",
+                      prefersReducedMotion ? "" : "transition-all duration-150 active:scale-[0.98]"
                     )}
                   >
                     {isGeneratingMemes ? "Generating..." : "Generate"}
@@ -1392,46 +1426,74 @@ export function VideoProcessorModal({
 
               {isGeneratingMemes && (
                 <div
-                  className="rounded-lg border border-[#E7E5F7] bg-white/70 backdrop-blur-sm p-4"
+                  className="rounded-md border border-gray-200 bg-gray-50/50 p-4"
                   aria-live="polite"
                 >
                   <div className="flex items-center gap-3 justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-[#301B69]">Generating memes...</div>
-                      <div className="text-xs text-[#5A5192]">
+                      <div className="text-sm font-medium text-gray-900">Generating memes...</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
                         {clampedFakeProgress >= 99 ? "Finalizing..." : `${clampedFakeProgress}%`}
                       </div>
                     </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-[#E7E5F7] overflow-hidden">
+                  <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#7C7EF4] to-[#6F80F0] transition-[width] duration-300"
+                      className="h-full bg-gray-900 transition-[width] duration-300"
                       style={{ width: `${clampedFakeProgress}%` }}
                     />
                   </div>
                 </div>
               )}
 
-              {/* Niche suggestion chips - single row, compact */}
-              <div className="flex flex-row flex-wrap gap-2">
-                {nicheSuggestions.map((niche) => (
-                  <button
-                    key={niche.title}
-                    type="button"
-                    onClick={() => {
-                      setMemeNiche(niche.title);
-                    }}
-                    className={cn(
-                      "px-3 py-1.5 rounded-lg text-center",
-                      "border border-[#7C7EF4]/20 bg-white/60 backdrop-blur-sm hover:border-[#7C7EF4]/40 hover:bg-white/80",
-                      prefersReducedMotion ? "" : "transition-all duration-200"
-                    )}
-                  >
-                    <span className="text-xs font-medium text-[#301B69]">
-                      {niche.title}
-                    </span>
-                  </button>
-                ))}
+              {/* Niche suggestion chips - enhanced visuals */}
+              <div className="flex flex-row flex-wrap gap-2.5">
+                {nicheSuggestions.map((niche) => {
+                  const Icon = niche.icon;
+                  return (
+                    <button
+                      key={niche.title}
+                      type="button"
+                      onClick={() => {
+                        setMemeNiche(niche.title);
+                      }}
+                      className={cn(
+                        "group relative px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg",
+                        "border bg-gradient-to-br backdrop-blur-sm",
+                        niche.borderColor,
+                        niche.bgGradient,
+                        niche.hoverBorder,
+                        "hover:shadow-md hover:scale-[1.02] active:scale-[0.98]",
+                        "focus:outline-none focus:ring-2 focus:ring-offset-2",
+                        "flex items-center gap-2",
+                        prefersReducedMotion ? "" : "transition-all duration-200"
+                      )}
+                    >
+                      {/* Icon */}
+                      <Icon className={cn(
+                        "w-4 h-4 sm:w-[18px] sm:h-[18px]",
+                        niche.textColor,
+                        "group-hover:scale-110",
+                        prefersReducedMotion ? "" : "transition-transform duration-200"
+                      )} />
+                      
+                      {/* Text */}
+                      <span className={cn(
+                        "text-xs sm:text-sm font-semibold",
+                        niche.textColor
+                      )}>
+                        {niche.title}
+                      </span>
+                      
+                      {/* Subtle gradient overlay on hover */}
+                      <div className={cn(
+                        "absolute inset-0 rounded-lg bg-gradient-to-br opacity-0 group-hover:opacity-10",
+                        niche.gradient,
+                        prefersReducedMotion ? "" : "transition-opacity duration-200"
+                      )} />
+                    </button>
+                  );
+                })}
               </div>
 
               {generatedMemes.length > 0 && (
@@ -1447,11 +1509,11 @@ export function VideoProcessorModal({
                         >
                           <div
                             className={cn(
-                              "rounded-lg overflow-hidden border bg-white/60 backdrop-blur-sm flex flex-col h-full",
+                              "rounded-md overflow-hidden border bg-white flex flex-col h-full",
                               selectedMemes.has(meme.id)
-                                ? "ring-2 ring-[#7C7EF4] border-[#7C7EF4]"
-                                : "border-[#E7E5F7] hover:border-[#7C7EF4]/40",
-                              prefersReducedMotion ? "" : "transition-all duration-200"
+                                ? "ring-2 ring-gray-900 border-gray-900"
+                                : "border-gray-200 hover:border-gray-300",
+                              prefersReducedMotion ? "" : "transition-all duration-150"
                             )}
                           >
                             {/* Loading icon at the top of the card */}
@@ -1530,11 +1592,11 @@ export function VideoProcessorModal({
                                 <button
                                   type="button"
                                   className={cn(
-                                    "absolute top-2 left-2 inline-flex items-center justify-center rounded-md p-1.5 text-white z-20",
+                                    "absolute top-2 left-2 inline-flex items-center justify-center rounded-md p-1.5 z-20 shadow-sm",
                                     selectedMemes.has(meme.id)
-                                      ? "bg-[#7C7EF4] opacity-100"
-                                      : "bg-white/90 backdrop-blur-sm text-[#7C7EF4] opacity-0 group-hover:opacity-100",
-                                    prefersReducedMotion ? "" : "transition-opacity duration-200"
+                                      ? "bg-gray-900 text-white opacity-100"
+                                      : "bg-white/95 backdrop-blur-sm text-gray-700 border border-gray-200 opacity-0 group-hover:opacity-100",
+                                    prefersReducedMotion ? "" : "transition-all duration-150"
                                   )}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1551,17 +1613,17 @@ export function VideoProcessorModal({
                             </div>
 
                             {/* Meme title/caption - improved typography with fixed height */}
-                            <div className="px-3 pt-2 pb-3 min-h-[44px] flex items-start flex-shrink-0">
+                            <div className="px-3 pt-2.5 pb-3 min-h-[44px] flex items-start flex-shrink-0">
                               {meme.text ? (
-                                <div className="text-xs font-semibold text-[#301B69] line-clamp-2 leading-snug">
+                                <div className="text-xs font-medium text-gray-700 line-clamp-2 leading-snug">
                                   {meme.text}
                                 </div>
                               ) : meme.filename && !meme.filename.match(/^[a-f0-9]{32,}$/i) ? (
-                                <div className="text-xs font-semibold text-[#301B69] line-clamp-2 leading-snug">
+                                <div className="text-xs font-medium text-gray-700 line-clamp-2 leading-snug">
                                   {meme.filename}
                                 </div>
                               ) : (
-                                <div className="text-xs font-semibold text-[#301B69] line-clamp-2 leading-snug opacity-0">
+                                <div className="text-xs font-medium text-gray-700 line-clamp-2 leading-snug opacity-0">
                                   {/* Placeholder to maintain height */}
                                   &nbsp;
                                 </div>
@@ -1572,8 +1634,8 @@ export function VideoProcessorModal({
                           </div>
 
                           {regeneratingMemeId === meme.id && (
-                            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center rounded-lg">
-                              <div className="text-sm text-[#301B69] font-medium">Regenerating...</div>
+                            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-md">
+                              <div className="text-sm text-gray-700 font-medium">Regenerating...</div>
                             </div>
                           )}
                         </div>
@@ -1593,8 +1655,9 @@ export function VideoProcessorModal({
 
               {/* Debug info */}
               {!isGeneratingMemes && generatedMemes.length === 0 && (
-                <div className="text-sm text-[#5A5192] text-center py-12">
-                  No memes generated yet. Enter a topic and click Generate.
+                <div className="text-sm text-gray-500 text-center py-12 sm:py-16">
+                  <p className="font-medium text-gray-900 mb-1">No memes generated yet</p>
+                  <p className="text-xs sm:text-sm">Enter a topic and click Generate</p>
                 </div>
               )}
             </div>

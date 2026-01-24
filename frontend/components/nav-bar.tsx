@@ -74,15 +74,14 @@ const scrollToId = (id: string) => {
 
 export const navLinks = [
   { id: "features", label: "Features" },
-  { id: "how-it-works", label: "How it Works" },
   { id: "pricing", label: "Pricing" },
   { id: "testimonials", label: "Testimonials" },
   { id: "faq", label: "FAQ" },
 ];
 
 // Split nav links for tablet/small desktop variant
-const visibleNavLinks = navLinks.slice(0, 3); // Features, How it Works, Pricing
-const dropdownNavLinks = navLinks.slice(3); // Testimonials, FAQ
+const visibleNavLinks = navLinks.slice(0, 3); // Features, Pricing, Testimonials
+const dropdownNavLinks = navLinks.slice(3); // FAQ
 
 export function NavBar() {
   const router = useRouter();
@@ -423,8 +422,12 @@ export function NavBar() {
         <div className="hidden md:flex xl:hidden items-center space-x-2 shrink-0 min-w-0">
           <button
             onClick={handleGetStarted}
+            type="button"
+            aria-label="Get started with Publefy"
             className={cn(
               "shimmer1 relative inline-flex items-center justify-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-white whitespace-nowrap shadow-lg",
+              "min-h-[44px] touch-manipulation",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-300",
               prefersReducedMotion ? "" : "transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
             )}
             style={{
@@ -434,7 +437,7 @@ export function NavBar() {
             }}
           >
             <span className="relative z-10">Get Started</span>
-            <ArrowRight className="h-4 w-4 relative z-10" />
+            <ArrowRight className="h-4 w-4 relative z-10" aria-hidden="true" />
           </button>
         </div>
 
@@ -442,8 +445,12 @@ export function NavBar() {
         <div className="hidden xl:flex items-center space-x-3 lg:space-x-4 shrink-0 min-w-0">
           <button
             onClick={handleGetStarted}
+            type="button"
+            aria-label="Get started with Publefy"
             className={cn(
               "shimmer1 relative inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-white whitespace-nowrap shadow-lg",
+              "min-h-[44px] touch-manipulation",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-300",
               prefersReducedMotion ? "" : "transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
             )}
             style={{
@@ -453,7 +460,7 @@ export function NavBar() {
             }}
           >
             <span className="relative z-10">Get Started</span>
-            <ArrowRight className="h-4 w-4 relative z-10" />
+            <ArrowRight className="h-4 w-4 relative z-10" aria-hidden="true" />
           </button>
         </div>
 
@@ -461,10 +468,15 @@ export function NavBar() {
         <div className="md:hidden ml-auto z-50">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            type="button"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
             className={cn(
-              "relative inline-flex items-center justify-center w-10 h-10 rounded-full",
+              "relative inline-flex items-center justify-center min-w-[44px] min-h-[44px] w-10 h-10 rounded-full",
               "bg-white/20 backdrop-blur-sm border border-white/30",
               "shadow-[0_2px_8px_rgba(0,0,0,0.08)]",
+              "touch-manipulation",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-300",
               prefersReducedMotion ? "" : "transition-all duration-200 active:scale-[0.98]",
               "hover:bg-white/30"
             )}

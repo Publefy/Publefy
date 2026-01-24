@@ -132,11 +132,12 @@ export default function HeroSection({
         >
           <button
             onClick={handleGetStarted}
-            type="button"                          /* ADD: be explicit */
+            type="button"
+            aria-label="Get started with Publefy - Create account or login"
             className="shimmer1
               w-full sm:w-auto cursor-pointer
               inline-flex items-center justify-center gap-2
-              h-12 sm:h-14 px-5 sm:px-6
+              min-h-[44px] h-10 sm:h-12 px-4 sm:px-6
               rounded-[14px] sm:rounded-[16px]
               text-white font-medium text-sm sm:text-base
               border border-[#5a4bcb]/40
@@ -144,11 +145,12 @@ export default function HeroSection({
               shadow-[0_8px_24px_rgba(91,12,213,0.20),inset_0_8px_10px_rgba(255,255,255,0.22)]
               motion-safe:transition-transform motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]
               focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-300
-              pointer-events-auto                 /* ADD */
+              touch-manipulation
+              pointer-events-auto
             "
           >
             Get Started
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
 
         </div>

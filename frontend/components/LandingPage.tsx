@@ -15,7 +15,6 @@ import { NavBar } from "./nav-bar";
 import HeroSection from "./hero-section";
 import MemeMarquee from "./sections/MemeMarquee";
 import AIMemeGeneration from "./sections/meme_generation_section";
-import DirectSocialPosting from "./sections/DirectSocialPosting";
 import PricingPlans from "./sections/PricingPlans";
 import Testimonials from "./sections/Testimonials";
 import FaqWithClouds from "./sections/FaqWithClouds";
@@ -125,12 +124,12 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="relative min-h-[100svh] bg-white overflow-x-clip ">{/**/}
+    <main className="relative min-h-[100svh] bg-white overflow-x-clip" role="main" aria-label="Publefy landing page">{/**/}
 
       <NavBar />
 
       {/* HERO */}
-      <div ref={heroRef} className="relative isolate z-20 min-h-fit h-auto bg-indigo-fade mt-16 md:mt-40">
+      <div ref={heroRef} className="relative isolate z-20 min-h-fit h-auto bg-indigo-fade mt-16 md:mt-40 pb-16 md:pb-24">
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-[80px] bg-gradient-to-b from-white/0 to-white" />
 
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -227,15 +226,14 @@ export default function LandingPage() {
       </div>
 
       {/* MEME MARQUEE LOOP */}
-      <MemeMarquee />
+      <section aria-label="Featured memes">
+        <MemeMarquee />
+      </section>
+      <div className="h-16 md:h-24" />
 
       {/* Content sections */}
       <SectionReveal id="features">
         <AIMemeGeneration />
-      </SectionReveal>
-
-      <SectionReveal>
-        <DirectSocialPosting />
       </SectionReveal>
 
       <SectionReveal id="pricing">
@@ -264,6 +262,6 @@ export default function LandingPage() {
           <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#f9f4ff] to-[#f3ecff]" />
         </footer>
       </section>
-    </div>
+    </main>
   );
 }

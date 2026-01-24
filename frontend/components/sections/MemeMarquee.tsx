@@ -43,7 +43,7 @@ const REELS_LIST = REEL_FILENAMES.map((filename, i) => ({
 
 export default function MemeMarquee() {
   return (
-    <div className="w-full bg-transparent pt-2 pb-12 md:pt-4 md:pb-20 overflow-hidden select-none relative z-50">
+    <div className="w-full bg-transparent pt-6 pb-12 md:pt-10 md:pb-20 overflow-hidden select-none relative z-50">
       <style jsx>{`
         @keyframes marquee {
           0% { transform: translateX(0); }

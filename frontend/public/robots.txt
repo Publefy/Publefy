@@ -1,0 +1,11 @@
+# robots.txt for Publefy
+User-agent: *
+Allow: /
+
+# Disallow admin and private routes
+Disallow: /admin/
+Disallow: /api/
+Disallow: /dashboard/
+
+# Sitemap location
+Sitemap: https://publefy.com/sitemap.xml

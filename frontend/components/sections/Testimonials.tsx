@@ -161,16 +161,16 @@ function MarqueeRow({
 
   return (
     <div className="relative overflow-hidden">
-      <div className="flex w-[200%] gap-4 sm:gap-6">
+      <div className="flex w-[200%] gap-3 sm:gap-4 md:gap-6">
         <div
-          className={`${reverse ? "marquee-reverse" : "marquee"} flex min-w-max gap-4 sm:gap-6`}
+          className={`${reverse ? "marquee-reverse" : "marquee"} flex min-w-max gap-3 sm:gap-4 md:gap-6`}
           style={{ "--duration": `${speed}s` } as React.CSSProperties}
         >
           {doubled.map((c, i) => (
             <TestimonialCard
               key={`${c.name}-${i}`}
               {...c}
-              widthClass="w-[300px] sm:w-[360px] md:w-[420px]"
+              widthClass="w-[260px] sm:w-[360px] md:w-[420px]"
             />
           ))}
         </div>
@@ -194,15 +194,16 @@ function TestimonialCard({
 }) {
   return (
     <div
-      className={`${widthClass} relative shrink-0 rounded-2xl border border-[#E4E9F8] bg-white/95 p-5 backdrop-blur`}
+      className={`${widthClass} relative shrink-0 rounded-2xl border border-[#E4E9F8] bg-white/95 p-4 sm:p-5 backdrop-blur`}
     >
       {/* stars */}
-      <div className="mb-3 flex gap-1 text-[#5C63E6]">
+      <div className="mb-2 sm:mb-3 flex gap-1 text-[#5C63E6]">
         {Array.from({ length: 5 }).map((_, i) => (
           <svg
             key={i}
-            width="16"
-            height="16"
+            width="14"
+            height="14"
+            className="sm:w-4 sm:h-4"
             viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden
@@ -213,17 +214,17 @@ function TestimonialCard({
       </div>
 
       {/* Quote */}
-      <p className="w-full max-w-full h-[100px] font-inter font-normal text-[18px] leading-[136%] text-[#301B69]">
+      <p className="w-full max-w-full h-[90px] sm:h-[100px] font-inter font-normal text-[15px] sm:text-[18px] leading-[136%] text-[#301B69]">
         {quote}
       </p>
 
-      <div className="mt-4 flex items-center gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#F2F6FF] to-[#E7ECFF] text-[12px] font-semibold text-[#2A2F55] ring-1 ring-white/80">
+      <div className="mt-3 sm:mt-4 flex items-center gap-2 sm:gap-3">
+        <div className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full bg-gradient-to-br from-[#F2F6FF] to-[#E7ECFF] text-[11px] sm:text-[12px] font-semibold text-[#2A2F55] ring-1 ring-white/80">
           {initials}
         </div>
         <div>
-          <div className="text-[13px] font-semibold text-[#1F2A4A]">{name}</div>
-          <div className="text-[12px] text-[#6A7390]">{role}</div>
+          <div className="text-[12px] sm:text-[13px] font-semibold text-[#1F2A4A]">{name}</div>
+          <div className="text-[11px] sm:text-[12px] text-[#6A7390]">{role}</div>
         </div>
       </div>
     </div>

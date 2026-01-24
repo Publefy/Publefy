@@ -16,7 +16,6 @@ import HeroSection from "./hero-section";
 import MemeMarquee from "./sections/MemeMarquee";
 import AIMemeGeneration from "./sections/meme_generation_section";
 import DirectSocialPosting from "./sections/DirectSocialPosting";
-import HowItWorks from "./sections/HowItWorks";
 import PricingPlans from "./sections/PricingPlans";
 import Testimonials from "./sections/Testimonials";
 import FaqWithClouds from "./sections/FaqWithClouds";
@@ -237,10 +236,6 @@ export default function LandingPage() {
 
       <SectionReveal>
         <DirectSocialPosting />
-      </SectionReveal>
-
-      <SectionReveal id="how-it-works">
-        <HowItWorks />
       </SectionReveal>
 
       <SectionReveal id="pricing">

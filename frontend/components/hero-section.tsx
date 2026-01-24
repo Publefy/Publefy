@@ -38,11 +38,10 @@ export default function HeroSection({
       className="
         relative isolate                             /* ADD: isolate to create new stacking context */
         /* Fallback for older iOS: uses --vh set above */
-        min-h-[calc(var(--vh,1vh)*70)]
+        min-h-fit
         /* Prefer stable viewport height when supported */
-        supports-[min-height:00svh]:min-h-[30svh]
+        supports-[min-height:00svh]:min-h-fit
 
-        sm:min-h-[380px] md:min-h-[460px] lg:min-h-[520px]
         py-6 sm:py-14 md:py-10 lg:py-10 xl:py-10
         pt-0 md:pt-10
         pb-0 md:pb-[max(env(safe-area-inset-bottom),0px)]

@@ -131,7 +131,7 @@ export default function LandingPage() {
       <NavBar />
 
       {/* HERO */}
-      <div ref={heroRef} className="relative isolate z-20 min-h-[70vh] h-auto md:h-[70vh] bg-indigo-fade mt-16 md:mt-40">
+      <div ref={heroRef} className="relative isolate z-20 min-h-fit h-auto bg-indigo-fade mt-16 md:mt-40">
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-[80px] bg-gradient-to-b from-white/0 to-white" />
 
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">

@@ -43,7 +43,7 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
   const [videoUploadOpen, setVideoUploadOpen] = useState(false);
   const [coachmarkAddAccount, setCoachmarkAddAccount] = useState(false);
   const [coachmarkMessage, setCoachmarkMessage] = useState<string | null>(null);
-  const [mobileTab, setMobileTab] = useState<"calendar" | "media">("calendar");
+  const [mobileTab, setMobileTab] = useState<"calendar" | "media">("media");
 
   const [mediaItems, setMediaItems] = useState<VideoItemUi[]>([]);
   const [availableProfiles, setAvailableProfiles] = useState<Profile[]>([]);
@@ -551,22 +551,6 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
         >
           <button
             role="tab"
-            aria-selected={mobileTab === "calendar"}
-            aria-controls="mobile-calendar-panel"
-            id="mobile-calendar-tab"
-            onClick={() => setMobileTab("calendar")}
-            className={cn(
-              "flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200",
-              "focus:outline-none focus:ring-2 focus:ring-[#7C7EF4]/20 focus:ring-offset-2",
-              mobileTab === "calendar"
-                ? "bg-[#301B69] text-white shadow-sm"
-                : "bg-white/30 text-[#301B69] hover:bg-white/40"
-            )}
-          >
-            Calendar
-          </button>
-          <button
-            role="tab"
             aria-selected={mobileTab === "media"}
             aria-controls="mobile-media-panel"
             id="mobile-media-tab"
@@ -580,6 +564,22 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
             )}
           >
             Media
+          </button>
+          <button
+            role="tab"
+            aria-selected={mobileTab === "calendar"}
+            aria-controls="mobile-calendar-panel"
+            id="mobile-calendar-tab"
+            onClick={() => setMobileTab("calendar")}
+            className={cn(
+              "flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200",
+              "focus:outline-none focus:ring-2 focus:ring-[#7C7EF4]/20 focus:ring-offset-2",
+              mobileTab === "calendar"
+                ? "bg-[#301B69] text-white shadow-sm"
+                : "bg-white/30 text-[#301B69] hover:bg-white/40"
+            )}
+          >
+            Calendar
           </button>
         </div>
       </div>

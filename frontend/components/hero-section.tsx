@@ -103,7 +103,7 @@ export default function HeroSection({
               leading-[1.1]
             "
           >
-            Videos/Memes in Minutes
+            Memes In Minutes
           </span>
         </h1>
 
@@ -117,9 +117,7 @@ export default function HeroSection({
             leading-[1.5]
           "
         >
-          Stay ahead of trends and create viral content effortlessly with our
-          AI-powered meme generator — built for creators, brands, and teams of
-          all sizes.
+          Turn videos into viral memes with AI and schedule posts automatically — built for creators and brands.
         </p>
 
         {/* CTA buttons */}

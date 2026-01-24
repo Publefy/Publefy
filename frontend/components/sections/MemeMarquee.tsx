@@ -42,8 +42,6 @@ const REELS_LIST = REEL_FILENAMES.map((filename, i) => ({
 }));
 
 export default function MemeMarquee() {
-  const [isPaused, setIsPaused] = useState(false);
-
   return (
     <div className="w-full bg-transparent py-12 md:py-20 overflow-hidden select-none relative z-50">
       <style jsx>{`
@@ -56,18 +54,11 @@ export default function MemeMarquee() {
           width: max-content;
           animation: marquee 120s linear infinite;
         }
-        .marquee-content.paused {
-          animation-play-state: paused;
-        }
       `}</style>
       
-      <div 
-        className="relative flex hover:cursor-pointer"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
+      <div className="relative flex hover:cursor-pointer">
         {/* Infinite Loop Container */}
-        <div className={cn("marquee-content gap-4 px-2", isPaused && "paused")}>
+        <div className="marquee-content gap-4 px-2">
           {/* We duplicate the list to create the infinite effect */}
           {[...REELS_LIST, ...REELS_LIST].map((reel, idx) => (
             <MemeCard key={`${reel.id}-${idx}`} reel={reel} />
@@ -81,7 +72,7 @@ export default function MemeMarquee() {
 
       <div className="mt-8 text-center">
         <p className="text-[#301B69]/40 text-sm font-medium animate-pulse">
-            Hover to stop and unmute
+            Hover to unmute
         </p>
       </div>
     </div>

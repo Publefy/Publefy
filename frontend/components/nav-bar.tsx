@@ -72,7 +72,7 @@ const scrollToId = (id: string) => {
   }
 };
 
-const navLinks = [
+export const navLinks = [
   { id: "features", label: "Features" },
   { id: "how-it-works", label: "How it Works" },
   { id: "pricing", label: "Pricing" },

@@ -1,19 +1,107 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useReducedMotion } from "framer-motion";
+import { navLinks } from "@/components/nav-bar";
+import { cn } from "@/lib/utils";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ChevronRight } from "lucide-react";
 
 export default function CtaFooterClouds() {
   const router = useRouter();
+  const pathname = usePathname();
+  const prefersReducedMotion = useReducedMotion();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState<"help_center" | "getting_started" | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const tutorials = [
+    { 
+      title: "How to schedule reels", 
+      url: "https://www.instagram.com/p/DTye2fbkj0K" 
+    },
+    { 
+      title: "How to generate in PubleFy", 
+      url: "https://www.instagram.com/p/DTyfnKLkh4U" 
+    },
+    { 
+      title: "How to upgrade a plan (30 seconds)", 
+      url: "https://www.instagram.com/p/DTygMMQElVb" 
+    }
+  ];
 
   const handleGetStarted = () => router.push("/?auth=login");
 
-  const links = {
-    quick: ["Home", "User Stories", "FAQ", "Support", "Blog"],
-    support: ["Help Center", "Getting Started", "Contact Support"],
+  const openDialog = (type: "help_center" | "getting_started", e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    triggerRef.current = e.currentTarget;
+    setDialogType(type);
+    setDialogOpen(true);
   };
 
+  const handleAnchor = (id: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (pathname !== "/") {
+      sessionStorage.setItem("scrollTarget", id);
+      router.push("/", { scroll: false });
+      return;
+    }
+
+    const scrollToId = (id: string) => {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          const header = document.querySelector("header");
+          const pillH = (header as HTMLElement | null)?.offsetHeight ?? 80;
+          const topGap = 20;
+          const offset = pillH + topGap;
+          const y = el.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({ top: y, behavior: "smooth" });
+        }
+      });
+    };
+
+    scrollToId(id);
+  };
+
+  const quickLinks = [
+    { label: "Home", onClick: () => {
+      if (pathname === "/") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        router.push("/");
+      }
+    }},
+    ...navLinks.map(link => ({
+      label: link.label,
+      onClick: handleAnchor(link.id)
+    }))
+  ];
+
+  const supportLinks = [
+    { 
+      label: "Help Center", 
+      onClick: (e: React.MouseEvent<HTMLButtonElement>) => openDialog("help_center", e) 
+    },
+    { 
+      label: "Getting Started", 
+      onClick: (e: React.MouseEvent<HTMLButtonElement>) => openDialog("getting_started", e) 
+    },
+    { label: "Contact Support", href: "mailto:nikita@publefy.com" },
+  ];
+
   const contact = [
-    { icon: MailIcon, label: "nclark@junzitechsolutions.com" },
+    { icon: MailIcon, label: "nikita@publefy.com" },
     { icon: PhoneIcon, label: "6174076181" },
     { icon: MapPinIcon, label: "Austin TX" },
   ];
@@ -114,9 +202,9 @@ export default function CtaFooterClouds() {
             </div>
 
             {/* Quick Links */}
-            <FooterCol title="Quick Links" items={links.quick} />
+            <FooterCol title="Quick Links" items={quickLinks} />
             {/* Support */}
-            <FooterCol title="Support" items={links.support} />
+            <FooterCol title="Support" items={supportLinks} />
 
             {/* Contact */}
             <div>
@@ -168,20 +256,98 @@ export default function CtaFooterClouds() {
         {/* bottom fade */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-[#EEE3FF] z-[1]" />
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent 
+          className="w-[92vw] max-w-[92vw] sm:w-[420px] sm:max-w-[420px] md:w-[560px] md:max-w-[560px] lg:w-[640px] lg:max-w-[640px] rounded-[24px] border-[#E9E1FF] bg-white/95 backdrop-blur-md p-4 sm:p-6 md:p-8 shadow-[0_10px_40px_rgba(48,27,105,0.15)] overflow-hidden box-border"
+          onCloseAutoFocus={(e) => {
+            if (triggerRef.current) {
+              e.preventDefault();
+              triggerRef.current.focus();
+            }
+          }}
+        >
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold text-[#2a145a] break-words">
+              {dialogType === "help_center" ? "Help Center - Coming Soon" : "Getting Started - Coming Soon"}
+            </DialogTitle>
+            <DialogDescription className="text-sm sm:text-base text-[#2a145a]/80 mt-2 break-words">
+              We're building this page right now. In the meantime, here are step-by-step tutorials on our Instagram:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3 mt-4 w-full">
+            {tutorials.map((tutorial, idx) => (
+              <a
+                key={idx}
+                href={tutorial.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "group flex items-center gap-2 sm:gap-3 rounded-xl p-3 sm:p-4 border border-[#E9E1FF]/50 bg-white/50 hover:bg-[#F5F0FF]/80 hover:border-[#E9E1FF] hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98] min-h-[56px] w-full overflow-hidden",
+                  !prefersReducedMotion && "transition-all duration-200"
+                )}
+              >
+                <div className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-[#5B3FF6] text-white shadow-[0_4px_12px_rgba(74,54,190,0.2)] flex-shrink-0">
+                  <InstagramIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="font-semibold text-sm sm:text-base text-[#2a145a] break-words">{tutorial.title}</div>
+                  <div className="text-xs text-[#2a145a]/60 mt-0.5">Instagram post</div>
+                </div>
+                <ChevronRight className={cn(
+                  "h-4 w-4 text-[#2a145a]/40 group-hover:text-[#2a145a]/60 flex-shrink-0",
+                  !prefersReducedMotion && "transition-colors"
+                )} />
+              </a>
+            ))}
+          </div>
+
+          <div className="mt-6 flex flex-col gap-4 w-full">
+            <p className="text-xs text-center text-[#2a145a]/60 italic break-words">
+              More guides will be added here soon.
+            </p>
+            <Button
+              onClick={() => setDialogOpen(false)}
+              className={cn(
+                "w-full max-w-full h-12 rounded-xl bg-[linear-gradient(180deg,#3C2A8B_0%,#2B1A69_100%)] text-white font-semibold shadow-lg hover:opacity-90 active:scale-[0.98]",
+                !prefersReducedMotion && "transition-all"
+              )}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
 
-function FooterCol({ title, items }: { title: string; items: string[] }) {
+function FooterCol({ 
+  title, 
+  items 
+}: { 
+  title: string; 
+  items: { label: string; onClick?: (e: React.MouseEvent) => void; href?: string }[] 
+}) {
   return (
     <div className="w-full max-w-full overflow-visible">
       <div className="mb-3 text-sm font-semibold">{title}</div>
       <ul className="space-y-2 text-sm text-[#2a145a]/80">
-        {items.map((t) => (
-          <li key={t} className="overflow-visible">
-            <a href="#" className="hover:underline inline-block">
-              {t}
-            </a>
+        {items.map((item) => (
+          <li key={item.label} className="overflow-visible">
+            {item.onClick ? (
+              <button
+                onClick={item.onClick}
+                className="hover:underline inline-block text-left"
+              >
+                {item.label}
+              </button>
+            ) : (
+              <a href={item.href || "#"} className="hover:underline inline-block">
+                {item.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>

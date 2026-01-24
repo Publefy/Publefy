@@ -8,7 +8,7 @@ export default function CtaFooterClouds() {
   const handleGetStarted = () => router.push("/?auth=login");
 
   const links = {
-    quick: ["Home", "User Stories", "FAQ", "Blog"],
+    quick: ["Home", "User Stories", "FAQ", "Support", "Blog"],
     support: ["Help Center", "Getting Started", "Contact Support"],
   };
 
@@ -107,11 +107,16 @@ export default function CtaFooterClouds() {
         {/* Footer grid */}
         <div className="relative z-[2] mt-16 px-6 md:px-10 pb-10 md:top-[64px]">
           <div className="mx-auto max-w-[1360px] min-[2000px]:max-w-[1600px] min-[3000px]:max-w-[1920px] min-[4000px]:max-w-[2200px]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-start text-[#2a145a] overflow-visible">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8 items-start text-[#2a145a] overflow-visible">
             {/* Brand */}
             <div className="flex items-center gap-2">
               <img src="/logo-marker.png" alt="Publefy" className="h-[48px] w-auto" />
             </div>
+
+            {/* Quick Links */}
+            <FooterCol title="Quick Links" items={links.quick} />
+            {/* Support */}
+            <FooterCol title="Support" items={links.support} />
 
             {/* Contact */}
             <div>

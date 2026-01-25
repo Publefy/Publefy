@@ -6,7 +6,6 @@ import hashlib
 import mimetypes
 import cv2
 import numpy as np
-import pytesseract
 from moviepy import VideoFileClip, ImageSequenceClip
 from tempfile import NamedTemporaryFile
 import shutil 
@@ -240,35 +239,6 @@ def _get_top_overlay_area(frame, percent_min=0.20, percent_max=0.25):
     y1 = int(h * percent_max) 
     return (0, y0, w, y1 - y0)
 
-def _detect_text_area(frames, num_frames=10):
-    """Detect text areas using OCR across multiple frames."""
-    x_min, y_min, x_max, y_max = np.inf, np.inf, 0, 0
-    has_text = False
-
-    for i in range(min(num_frames, len(frames))):
-        gray = cv2.cvtColor(frames[i], cv2.COLOR_BGR2GRAY)
-        d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
-        for j in range(len(d["text"])):
-            try:
-                if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
-                    has_text = True
-                    x, y, w, h = d["left"][j], d["top"][j], d["width"][j], d["height"][j]
-                    x_min, y_min = min(x_min, x), min(y_min, y)
-                    x_max, y_max = max(x_max, x + w), max(y_max, y + h)
-            except ValueError:
-                continue
-
-    if not has_text:
-        return None
-
-    expand = 20  # Increased padding to ensure full text coverage
-    return (
-        max(0, x_min - expand),
-        max(0, y_min - expand),
-        (x_max - x_min) + 2 * expand,
-        (y_max - y_min) + 2 * expand,
-    )
-
 def _make_thumbnail_from_video_path(video_path: str, out_path: str, at_seconds: float = 0.5):
     clip = VideoFileClip(video_path)
     t = max(0.0, min(at_seconds, max(0.0, (clip.duration or 1.0) - 0.05)))
@@ -294,37 +264,16 @@ def _render_with_caption(src_path: str, caption: str) -> tuple[str, tuple]:
     """
     Returns (final_video_path, text_area)
     """
-    # Sample multiple frames to detect text that appears at different times
+    # detect overlay area from first frame (same as finalize)
     clip_for_overlay = VideoFileClip(src_path)
-    frames = []
-    frame_count = 0
-    for frame in clip_for_overlay.iter_frames():
-        if frame_count >= 8:  # Sample 8 frames for better text detection
-            break
-        frames.append(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-        frame_count += 1
+    first_frame = next(clip_for_overlay.iter_frames())
     clip_for_overlay.reader.close()
     clip_for_overlay.close()
 
-    # Use OCR to detect actual text regions instead of static percentage
-    detected_area = _detect_text_area(frames, num_frames=len(frames))
-    if detected_area:
-        x, y, w, h = detected_area
-        # Increase padding to ensure full coverage of text
-        frame_h, frame_w = frames[0].shape[:2]
-        padding = 25
-        x = max(0, x - padding)
-        y = max(0, y - padding)
-        w = min(frame_w - x, w + 2 * padding)
-        h = min(frame_h - y, h + 2 * padding)
-        text_area = (x, y, w, h)
-    else:
-        # Fallback to static percentage if no text detected
-        x, y, w, h = _get_top_overlay_area(frames[0], percent_min=0.20, percent_max=0.30)
-        text_area = (x, y, w, h)
-    
+    x, y, w, h = _get_top_overlay_area(first_frame, percent_min=0.20, percent_max=0.25)
     background_color = (0, 0, 0)
     text_color = (255, 255, 255)
+    text_area = (x, y, w, h)
 
     # process frames
     clip = VideoFileClip(src_path)

@@ -675,7 +675,7 @@ export function CalendarView({
       scheduled_time: selectedPost.scheduled_time || new Date().toISOString(),
       caption: parsed.caption ?? (selectedPost as any)?.caption ?? "",
       hashtags: parsed.hashtags ?? (selectedPost as any)?.hashtags ?? [],
-      activate: false,
+      activate: true,
       client_tz: userTimeZone,
       thumbnail_url: parsed.thumbnail_url ?? "",
     }

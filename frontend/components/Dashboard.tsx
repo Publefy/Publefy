@@ -295,7 +295,7 @@ export default function Dashboard({ onDashboardLogout }: DashboardProps) {
       scheduled_time: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
       caption: (quickEditorVideo as any).caption ?? (quickEditorVideo as any).summary ?? "",
       hashtags: Array.isArray((quickEditorVideo as any).hashtags) ? (quickEditorVideo as any).hashtags : [],
-      activate: false,
+      activate: true,
       client_tz: userTimeZone,
       thumbnail_url: (quickEditorVideo as any).thumbnail_url ?? "",
     };

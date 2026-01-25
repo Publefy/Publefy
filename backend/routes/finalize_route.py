@@ -256,20 +256,42 @@ def finalize_video():
         with open(original_path, "wb") as f_out:
             shutil.copyfileobj(file, f_out)
 
+        # Sample multiple frames to detect text that appears at different times
         try:
             clip_for_overlay = VideoFileClip(original_path)
-            first_frame = next(clip_for_overlay.iter_frames())
+            frames = []
+            frame_count = 0
+            for frame in clip_for_overlay.iter_frames():
+                if frame_count >= 8:  # Sample 8 frames for better text detection
+                    break
+                frames.append(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+                frame_count += 1
             clip_for_overlay.reader.close()
             clip_for_overlay.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            sentry_sdk.capture_message("Finalize: Failed to read first frame", level="error")
-            return jsonify({"error": "Failed to read first frame: " + str(e)}), 500
+            sentry_sdk.capture_message("Finalize: Failed to read frames", level="error")
+            return jsonify({"error": "Failed to read frames: " + str(e)}), 500
 
-        x, y, w, h = get_top_overlay_area(first_frame, percent_min=0.20, percent_max=0.25)
+        # Use OCR to detect actual text regions instead of static percentage
+        detected_area = detect_text_area(frames, num_frames=len(frames))
+        if detected_area:
+            x, y, w, h = detected_area
+            # Increase padding to ensure full coverage of text
+            frame_h, frame_w = frames[0].shape[:2]
+            padding = 25
+            x = max(0, x - padding)
+            y = max(0, y - padding)
+            w = min(frame_w - x, w + 2 * padding)
+            h = min(frame_h - y, h + 2 * padding)
+            text_area = (x, y, w, h)
+        else:
+            # Fallback to static percentage if no text detected
+            x, y, w, h = get_top_overlay_area(frames[0], percent_min=0.20, percent_max=0.30)
+            text_area = (x, y, w, h)
+        
         background_color = (0, 0, 0)
         text_color = (255, 255, 255)
-        text_area = (x, y, w, h)
 
         shutil.copyfile(original_path, cleaned_path)
 
@@ -480,6 +502,7 @@ def process_video(input_path, output_path):
 
 
 def detect_text_area(frames, num_frames=10):
+    """Detect text areas using OCR across multiple frames to catch text at different times."""
     x_min, y_min, x_max, y_max = np.inf, np.inf, 0, 0
     has_text = False
 
@@ -499,7 +522,8 @@ def detect_text_area(frames, num_frames=10):
     if not has_text:
         return None
 
-    expand = 10
+    # Increased padding to ensure full text coverage (handles text that extends beyond detected bounds)
+    expand = 25
     return (
         max(0, x_min - expand),
         max(0, y_min - expand),

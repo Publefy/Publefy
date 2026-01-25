@@ -11,35 +11,37 @@ pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD")
 
 
 def detect_text_area(frames, num_frames=10):
-    # Only scan first frame since text positioning is static - major performance optimization
+    """Detect text areas using OCR across multiple frames to catch text at different times."""
     if not frames:
         return None
 
     x_min, y_min, x_max, y_max = np.inf, np.inf, 0, 0
     has_text = False
 
-    # Process only the first frame instead of multiple frames
-    gray = cv2.cvtColor(frames[0], cv2.COLOR_BGR2GRAY)
-    d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
-    for j in range(len(d["text"])):
-        try:
-            if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
-                has_text = True
-                x, y, w, h = (
-                    d["left"][j],
-                    d["top"][j],
-                    d["width"][j],
-                    d["height"][j],
-                )
-                x_min, y_min = min(x_min, x), min(y_min, y)
-                x_max, y_max = max(x_max, x + w), max(y_max, y + h)
-        except ValueError:
-            continue
+    # Scan multiple frames to catch text that appears at different times
+    for i in range(min(num_frames, len(frames))):
+        gray = cv2.cvtColor(frames[i], cv2.COLOR_BGR2GRAY)
+        d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
+        for j in range(len(d["text"])):
+            try:
+                if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
+                    has_text = True
+                    x, y, w, h = (
+                        d["left"][j],
+                        d["top"][j],
+                        d["width"][j],
+                        d["height"][j],
+                    )
+                    x_min, y_min = min(x_min, x), min(y_min, y)
+                    x_max, y_max = max(x_max, x + w), max(y_max, y + h)
+            except ValueError:
+                continue
 
     if not has_text:
         return None
 
-    expand = 10
+    # Increased padding to ensure full text coverage (handles text that extends beyond detected bounds)
+    expand = 25
     return (
         max(0, x_min - expand),
         max(0, y_min - expand),

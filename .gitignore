@@ -42,4 +42,6 @@ docker-compose.override.yml
 backend/publefy_gcp_sk.json
 frontend/PublefyFront
 backend/artifexDB_export/
+CLAUDE.md
+/memory-bank
 

@@ -11,7 +11,10 @@ pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD")
 
 
 def detect_text_area(frames, num_frames=10):
-    # Only scan first frame since text positioning is static - major performance optimization
+    """
+    DYNAMIC text detection that finds the LAST pixel where text appears.
+    Returns a box that covers from TOP of frame (y=0) to the bottom-most text pixel + padding.
+    """
     if not frames:
         return None
 
@@ -23,7 +26,8 @@ def detect_text_area(frames, num_frames=10):
     d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
     for j in range(len(d["text"])):
         try:
-            if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
+            # Lower confidence threshold to catch more text including faint/styled text
+            if int(float(d["conf"][j])) > 15 and d["text"][j].strip():
                 has_text = True
                 x, y, w, h = (
                     d["left"][j],
@@ -32,6 +36,7 @@ def detect_text_area(frames, num_frames=10):
                     d["height"][j],
                 )
                 x_min, y_min = min(x_min, x), min(y_min, y)
+                # y_max tracks the BOTTOM-MOST pixel of text
                 x_max, y_max = max(x_max, x + w), max(y_max, y + h)
         except ValueError:
             continue
@@ -39,12 +44,29 @@ def detect_text_area(frames, num_frames=10):
     if not has_text:
         return None
 
-    expand = 10
+    frame_height, frame_width = frames[0].shape[:2]
+
+    # Horizontal: add padding on sides
+    expand_horizontal = 30
+
+    # Vertical: CRITICAL - add padding BELOW the bottom-most text to catch effects
+    expand_bottom = 50
+
+    # ALWAYS start from TOP of frame (y=0) to ensure we cover ALL text regardless of position
+    # End at the LAST pixel of detected text + bottom padding
+    final_y_start = 0
+    final_y_end = min(y_max + expand_bottom, frame_height)
+    final_height = final_y_end - final_y_start
+
+    # Horizontal: use full width to catch edge text
+    final_x_start = 0
+    final_width = frame_width
+
     return (
-        max(0, x_min - expand),
-        max(0, y_min - expand),
-        (x_max - x_min) + 2 * expand,
-        (y_max - y_min) + 2 * expand,
+        final_x_start,
+        final_y_start,
+        final_width,
+        final_height
     )
 
 

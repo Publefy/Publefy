@@ -8,7 +8,7 @@ This file handles the /video/analyze/ endpoint independently.
 📦 Includes:
     - File handling
     - Gemini video/audio summarization
-    - Meme generation (20 captions)
+    - Meme generation (5 captions)
     - Synchronous request-response
 
 =======================================================================
@@ -108,7 +108,7 @@ def analyze_video():
         meme_options = generate_meme_captions(
             video_summary=video_summary,
             audio_summary=audio_summary,
-            num_options=20,
+            num_options=5,
             temperature=0.3,
             keyword=industry or ""
         )
@@ -125,7 +125,7 @@ def analyze_video():
             "reel_id": reel_id,
             "video_summary": video_summary,
             "audio_summary": audio_summary,
-            "meme_options": meme_options[:20],
+            "meme_options": meme_options[:5],
             "industry": industry or None
         })
 

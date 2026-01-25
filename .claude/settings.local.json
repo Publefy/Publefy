@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(python main.py:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 5 tail:*)",
+      "Bash(venvScriptspython.exe:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

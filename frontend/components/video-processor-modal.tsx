@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/components/ui/use-toast";
 import { X, Zap, Calendar, Maximize2, Play, Check, Loader2, Dumbbell, UtensilsCrossed, Heart, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -405,6 +406,7 @@ export function VideoProcessorModal({
 
   // Meme Bank
   const [memeNiche, setMemeNiche] = useState("");
+  const [memeCount, setMemeCount] = useState(5); // Slider value: 1-10
   const [generatedMemes, setGeneratedMemes] = useState<MemeBankItem[]>([]);
   const [selectedMemes, setSelectedMemes] = useState<Set<string>>(new Set());
   const [isGeneratingMemes, setIsGeneratingMemes] = useState(false);
@@ -889,16 +891,15 @@ export function VideoProcessorModal({
       const usage = userData?.usage || {};
       
       // Check if user has unlimited plan
-      const isUnlimited = subscription?.plan?.toLowerCase() === "unlimited" || 
+      const isUnlimited = subscription?.plan?.toLowerCase() === "unlimited" ||
                           subscription?.has_unlimited_promo === true;
-      
+
       if (!isUnlimited) {
         const pointsBalance = usage?.points_balance || 0;
-        const count = 3; // Number of memes to generate
 
-        if (pointsBalance < count) {
+        if (pointsBalance < memeCount) {
           // Show insufficient points modal
-          setPointsInfo({ balance: pointsBalance, required: count });
+          setPointsInfo({ balance: pointsBalance, required: memeCount });
           setInsufficientPointsOpen(true);
           return;
         }
@@ -916,7 +917,7 @@ export function VideoProcessorModal({
       industry: userInput,
       keyword: "",
       niche: "",
-      count: 3,
+      count: memeCount,
       allowRepeats,
       onePromptForAll,
       profileId: profile?.id || undefined,
@@ -1364,7 +1365,7 @@ export function VideoProcessorModal({
             }
             @media (min-width: 640px) {
               .meme-results-grid {
-                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
               }
             }
             @media (max-width: 639px) {
@@ -1422,6 +1423,27 @@ export function VideoProcessorModal({
                     {isGeneratingMemes ? "Generating..." : "Generate"}
                   </Button>
                 </div>
+              </div>
+
+              {/* Meme Count Slider */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="meme-count" className="text-xs sm:text-sm font-medium text-gray-700">
+                    Number of Memes
+                  </Label>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                    {memeCount}
+                  </span>
+                </div>
+                <Slider
+                  id="meme-count"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={[memeCount]}
+                  onValueChange={(value) => setMemeCount(value[0])}
+                  className="w-full"
+                />
               </div>
 
               {isGeneratingMemes && (
@@ -1498,7 +1520,7 @@ export function VideoProcessorModal({
 
               {generatedMemes.length > 0 && (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  {/* Results - 3 column grid to match generated memes */}
+                  {/* Results - 5 column grid on desktop, 3 on mobile */}
                   <div className="overflow-x-auto overflow-y-hidden xl:overflow-x-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     <div className="meme-results-grid grid gap-4 pb-2">
                       {generatedMemes.map((meme) => (

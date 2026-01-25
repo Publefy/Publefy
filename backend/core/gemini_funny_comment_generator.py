@@ -19,7 +19,7 @@ def generate_meme_captions(
         video_summary: Video description (use with audio_summary)
         audio_summary: Audio description (use with video_summary)
         summary: Combined summary (alternative to video+audio)
-        num_options: Number of captions to generate (3 or 20)
+        num_options: Number of captions to generate (3, 5, or 20)
         temperature: Creativity level (0.2-0.9)
         keyword: User-provided keyword/prompt (e.g., "gym", "fitness") to guide generation
 

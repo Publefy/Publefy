@@ -259,6 +259,7 @@ def finalize_video():
         try:
             clip_for_overlay = VideoFileClip(original_path)
             first_frame = next(clip_for_overlay.iter_frames())
+            first_frame_bgr = cv2.cvtColor(first_frame, cv2.COLOR_RGB2BGR)
             clip_for_overlay.reader.close()
             clip_for_overlay.close()
         except Exception as e:
@@ -266,10 +267,23 @@ def finalize_video():
             sentry_sdk.capture_message("Finalize: Failed to read first frame", level="error")
             return jsonify({"error": "Failed to read first frame: " + str(e)}), 500
 
-        x, y, w, h = get_top_overlay_area(first_frame, percent_min=0.20, percent_max=0.25)
+        # Use OCR to dynamically detect text and find the LAST pixel where text appears
+        detected_area = detect_text_area([first_frame_bgr], num_frames=1)
+
+        if detected_area:
+            # detect_text_area now returns the complete coverage area from TOP to BOTTOM
+            # No additional padding needed - it's all handled dynamically
+            text_area = detected_area
+        else:
+            # Fallback: cover top 40% if no text detected
+            frame_h, frame_w = first_frame_bgr.shape[:2]
+            text_area = (0, 0, frame_w, int(frame_h * 0.40))
+
+        # Unpack coordinates for black box covering
+        x, y, w, h = text_area
+
         background_color = (0, 0, 0)
         text_color = (255, 255, 255)
-        text_area = (x, y, w, h)
 
         shutil.copyfile(original_path, cleaned_path)
 
@@ -286,6 +300,7 @@ def finalize_video():
 
             for frame in clip.iter_frames():
                 bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                # Draw black rectangle from TOP to BOTTOM-MOST text pixel + padding
                 cv2.rectangle(bgr, (x, y), (x + w, y + h), background_color, -1)
                 overlayed = overlay_text_on_frame(bgr, caption, text_area, color=text_color)
                 overlayed = add_copyright_watermark(overlayed)
@@ -480,6 +495,11 @@ def process_video(input_path, output_path):
 
 
 def detect_text_area(frames, num_frames=10):
+    """
+    DYNAMIC text detection that scans and finds the LAST pixel where text appears.
+    Returns a box that ALWAYS starts from TOP (y=0) and covers down to the bottom-most text + padding.
+    This ensures complete coverage regardless of text position (high, middle, or low).
+    """
     x_min, y_min, x_max, y_max = np.inf, np.inf, 0, 0
     has_text = False
 
@@ -488,10 +508,12 @@ def detect_text_area(frames, num_frames=10):
         d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
         for j in range(len(d["text"])):
             try:
-                if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
+                # Lower confidence to catch faint/styled text
+                if int(float(d["conf"][j])) > 15 and d["text"][j].strip():
                     has_text = True
                     x, y, w, h = d["left"][j], d["top"][j], d["width"][j], d["height"][j]
                     x_min, y_min = min(x_min, x), min(y_min, y)
+                    # Track the BOTTOM-MOST pixel where text appears
                     x_max, y_max = max(x_max, x + w), max(y_max, y + h)
             except ValueError:
                 continue
@@ -499,12 +521,26 @@ def detect_text_area(frames, num_frames=10):
     if not has_text:
         return None
 
-    expand = 10
+    frame_height, frame_width = frames[0].shape[:2]
+
+    # Add padding BELOW the bottom-most detected text to catch shadows/glows/effects
+    expand_bottom = 60
+
+    # CRITICAL: Start from absolute TOP (y=0) to cover text at ANY vertical position
+    # End at the LAST detected text pixel + bottom padding
+    final_y_start = 0
+    final_y_end = min(y_max + expand_bottom, frame_height)
+    final_height = final_y_end - final_y_start
+
+    # Use full frame width to catch all horizontal text and edge effects
+    final_x_start = 0
+    final_width = frame_width
+
     return (
-        max(0, x_min - expand),
-        max(0, y_min - expand),
-        (x_max - x_min) + 2 * expand,
-        (y_max - y_min) + 2 * expand,
+        final_x_start,
+        final_y_start,
+        final_width,
+        final_height
     )
 
 

@@ -45,16 +45,37 @@ gcloud auth application-default set-quota-project publefy-484406
 ## Установка
 
 ### Backend
+
+**Windows:**
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+# Отредактировать .env с вашими значениями
+```
+
+**macOS/Linux:**
 ```bash
 cd backend
 python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Отредактировать .env
+# Отредактировать .env с вашими значениями
 ```
 
 ### Frontend
+
+**Windows:**
+```powershell
+cd frontend
+npm install
+echo NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 > .env.local
+```
+
+**macOS/Linux:**
 ```bash
 cd frontend
 npm install
@@ -64,19 +85,33 @@ echo "NEXT_PUBLIC_API_URL=http://127.0.0.1:8000" > .env.local
 ## Запуск
 
 ### Backend
+
+**Windows:**
+```powershell
+cd backend
+.venv\Scripts\activate
+python run_uvicorn.py
+# Сервер запустится на http://127.0.0.1:8000
+```
+
+**macOS/Linux:**
 ```bash
 cd backend
 source .venv/bin/activate
 python run_uvicorn.py
-# http://127.0.0.1:8000
+# Сервер запустится на http://127.0.0.1:8000
 ```
 
 ### Frontend
+
+**Windows/macOS/Linux:**
 ```bash
 cd frontend
 npm run dev
-# http://localhost:3000
+# Приложение запустится на http://localhost:3000
 ```
+
+**Примечание:** Запустите backend и frontend в отдельных терминалах. Убедитесь, что файл `.env` в директории `backend` содержит все необходимые переменные окружения перед запуском.
 
 ## Переменные окружения (Backend)
 

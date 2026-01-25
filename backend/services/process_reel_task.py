@@ -52,7 +52,7 @@ def process_reel_task(ext, reel_id):
     text_color = get_text_color_by_contrast(background_color)
     summary = summarize_video(cleaned_path)
     from core.gemini_funny_comment_generator import generate_meme_captions
-    meme_options = generate_meme_captions(summary=summary, num_options=3, temperature=0.2)
+    meme_options = generate_meme_captions(summary=summary, num_options=5, temperature=0.2)
 
     if not meme_options:
         create_reel(

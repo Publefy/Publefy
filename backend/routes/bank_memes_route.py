@@ -88,6 +88,98 @@ def _gemini_client(project: str = GEMINI_PROJECT, location: str = GEMINI_LOCATIO
     )
 
 # ---------------- helpers ----------------
+_WATERMARK_LOGO_CACHE = {}
+
+def _load_watermark_logo(target_height=30):
+    """Load and cache the watermark logo, resized to target height."""
+    cache_key = target_height
+    if cache_key in _WATERMARK_LOGO_CACHE:
+        return _WATERMARK_LOGO_CACHE[cache_key]
+
+    logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "watermark-logo.png")
+    if not os.path.exists(logo_path):
+        return None
+
+    logo = cv2.imread(logo_path, cv2.IMREAD_UNCHANGED)
+    if logo is None:
+        return None
+
+    # Resize maintaining aspect ratio
+    h, w = logo.shape[:2]
+    scale = target_height / h
+    new_w = int(w * scale)
+    logo = cv2.resize(logo, (new_w, target_height), interpolation=cv2.INTER_AREA)
+
+    _WATERMARK_LOGO_CACHE[cache_key] = logo
+    return logo
+
+
+def _add_copyright_watermark(
+    frame,
+    text="Publefy",
+    position="bottom-center",
+    font_scale=0.8,
+    thickness=2,
+    color=(255, 255, 255),
+    padding=30,
+):
+    """Adds copyright watermark with logo to the bottom of the frame."""
+    height, width = frame.shape[:2]
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    # Calculate logo size based on frame height (roughly 3% of frame height)
+    logo_height = max(25, int(height * 0.03))
+    logo = _load_watermark_logo(logo_height)
+
+    (text_w, text_h), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+
+    # Calculate total width (logo + gap + text)
+    gap = 8
+    logo_w = logo.shape[1] if logo is not None else 0
+    total_w = logo_w + gap + text_w if logo is not None else text_w
+
+    # Position calculation
+    if position == "bottom-right":
+        start_x = width - total_w - padding
+    elif position == "bottom-left":
+        start_x = padding
+    else:  # bottom-center
+        start_x = (width - total_w) // 2
+
+    text_y = height - padding
+
+    # Draw logo if available
+    if logo is not None:
+        logo_x = start_x
+        logo_y = text_y - logo_height + 5  # Align with text baseline
+
+        # Handle alpha channel for transparency
+        if logo.shape[2] == 4:
+            alpha = logo[:, :, 3] / 255.0
+            for c in range(3):
+                y1, y2 = logo_y, logo_y + logo.shape[0]
+                x1, x2 = logo_x, logo_x + logo.shape[1]
+                if y1 >= 0 and y2 <= height and x1 >= 0 and x2 <= width:
+                    frame[y1:y2, x1:x2, c] = (
+                        alpha * logo[:, :, c] + (1 - alpha) * frame[y1:y2, x1:x2, c]
+                    )
+        else:
+            y1, y2 = logo_y, logo_y + logo.shape[0]
+            x1, x2 = logo_x, logo_x + logo.shape[1]
+            if y1 >= 0 and y2 <= height and x1 >= 0 and x2 <= width:
+                frame[y1:y2, x1:x2] = logo
+
+        text_x = logo_x + logo_w + gap
+    else:
+        text_x = start_x
+
+    # Add shadow for better visibility
+    shadow_offset = 2
+    cv2.putText(frame, text, (text_x + shadow_offset, text_y + shadow_offset), font, font_scale, (0, 0, 0), thickness + 1, cv2.LINE_AA)
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, color, thickness, cv2.LINE_AA)
+    return frame
+
+
 def _overlay_text_on_frame(
     frame,
     text,
@@ -197,6 +289,7 @@ def _render_with_caption(src_path: str, caption: str) -> tuple[str, tuple]:
         bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         cv2.rectangle(bgr, (x, y), (x + w, y + h), background_color, -1)
         overlayed = _overlay_text_on_frame(bgr, caption, text_area, color=text_color)
+        overlayed = _add_copyright_watermark(overlayed)
         writer.write(overlayed)
 
     writer.release()

@@ -20,6 +20,18 @@ import sentry_sdk
 
 finalize_blueprint = Blueprint("finalize_direct", __name__, url_prefix="/video")
 
+# Initialize EasyOCR detector (lazy load)
+_EASYOCR_READER = None
+
+def _get_easyocr_reader():
+    """Lazy load EasyOCR reader instance for detection."""
+    global _EASYOCR_READER
+    if _EASYOCR_READER is None:
+        import easyocr
+        # Initialize with English language, GPU can be enabled if available
+        _EASYOCR_READER = easyocr.Reader(['en'], gpu=False, verbose=False)
+    return _EASYOCR_READER
+
 # --- helpers -----------------------------------------------------------------
 
 def _get_profile_by_ig_id(user_id: str, ig_id: str):
@@ -257,27 +269,61 @@ def finalize_video():
             shutil.copyfileobj(file, f_out)
 
         try:
-            clip_for_overlay = VideoFileClip(original_path)
-            first_frame = next(clip_for_overlay.iter_frames())
-            first_frame_bgr = cv2.cvtColor(first_frame, cv2.COLOR_RGB2BGR)
-            clip_for_overlay.reader.close()
-            clip_for_overlay.close()
+            # FIX 1 & 2: Extract multiple frames from first 2 seconds
+            # VideoFileClip handles rotation metadata automatically
+            clip_for_detection = VideoFileClip(original_path)
+            fps = clip_for_detection.fps
+
+            # Sample up to 10 frames from first 2 seconds to catch fade-in captions
+            frames_for_detection = []
+            max_frames_for_detection = 10
+            frames_in_2_seconds = int(fps * 2)
+            sample_every = max(1, frames_in_2_seconds // max_frames_for_detection)
+
+            for i, frame in enumerate(clip_for_detection.iter_frames()):
+                if len(frames_for_detection) >= max_frames_for_detection:
+                    break
+                if i % sample_every == 0:
+                    frames_for_detection.append(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+            clip_for_detection.reader.close()
+            clip_for_detection.close()
+
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            sentry_sdk.capture_message("Finalize: Failed to read first frame", level="error")
-            return jsonify({"error": "Failed to read first frame: " + str(e)}), 500
+            sentry_sdk.capture_message("Finalize: Failed to read frames for detection", level="error")
+            return jsonify({"error": "Failed to read frames for detection: " + str(e)}), 500
 
-        # Use OCR to dynamically detect text and find the LAST pixel where text appears
-        detected_area = detect_text_area([first_frame_bgr], num_frames=1)
+        # FIX 5: Add debug output path
+        import tempfile as tmp
+        debug_path = os.path.join(tmp.gettempdir(), f"finalize_debug_{os.path.basename(original_path)}.png")
+
+        # Use edge-density detection with all fixes applied
+        detected_area = detect_text_area(frames_for_detection, debug_output_path=debug_path)
+
+        frame_h, frame_w = frames_for_detection[0].shape[:2] if frames_for_detection else (0, 0)
 
         if detected_area:
-            # detect_text_area now returns the complete coverage area from TOP to BOTTOM
-            # No additional padding needed - it's all handled dynamically
+            # detect_text_area now returns the complete coverage area
             text_area = detected_area
+            x, y, w, h = text_area
+            print(f"[DEBUG] Text detection result: x={x}, y={y}, w={w}, h={h}")
+            print(f"[DEBUG] Frame size: {frame_w}x{frame_h}")
+            print(f"[DEBUG] Coverage: {y} to {y+h} ({(h/frame_h)*100:.1f}% of frame)")
+            sentry_sdk.add_breadcrumb(
+                category="text_detection",
+                message=f"Detected area: y={y} h={h} coverage={(h/frame_h)*100:.1f}%",
+                level="info"
+            )
         else:
             # Fallback: cover top 40% if no text detected
-            frame_h, frame_w = first_frame_bgr.shape[:2]
             text_area = (0, 0, frame_w, int(frame_h * 0.40))
+            print(f"[DEBUG] No text detected, using fallback: top 40%")
+            sentry_sdk.add_breadcrumb(
+                category="text_detection",
+                message="No text detected, using fallback coverage",
+                level="warning"
+            )
 
         # Unpack coordinates for black box covering
         x, y, w, h = text_area
@@ -494,53 +540,87 @@ def process_video(input_path, output_path):
 
 
 
-def detect_text_area(frames, num_frames=10):
+def detect_text_area(frames, num_frames=10, debug_output_path=None):
     """
-    DYNAMIC text detection that scans and finds the LAST pixel where text appears.
-    Returns a box that ALWAYS starts from TOP (y=0) and covers down to the bottom-most text + padding.
-    This ensures complete coverage regardless of text position (high, middle, or low).
+    EasyOCR detector approach for reliable text area detection.
+
+    1. Uses EasyOCR on 8-12 sampled frames (first ~2 seconds)
+    2. Computes y_max = max(bottom_y of all detected boxes across frames)
+    3. Sets mask once: mask_end = min(H, y_max + 120)
+    4. Returns (x, y, w, h) for mask area
+    5. If no boxes detected: fallback mask_end = int(H * 0.30) and log it
+
+    Returns (x, y, w, h) for mask area.
     """
-    x_min, y_min, x_max, y_max = np.inf, np.inf, 0, 0
-    has_text = False
-
-    for i in range(min(num_frames, len(frames))):
-        gray = cv2.cvtColor(frames[i], cv2.COLOR_BGR2GRAY)
-        d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
-        for j in range(len(d["text"])):
-            try:
-                # Lower confidence to catch faint/styled text
-                if int(float(d["conf"][j])) > 15 and d["text"][j].strip():
-                    has_text = True
-                    x, y, w, h = d["left"][j], d["top"][j], d["width"][j], d["height"][j]
-                    x_min, y_min = min(x_min, x), min(y_min, y)
-                    # Track the BOTTOM-MOST pixel where text appears
-                    x_max, y_max = max(x_max, x + w), max(y_max, y + h)
-            except ValueError:
-                continue
-
-    if not has_text:
+    if not frames:
         return None
 
     frame_height, frame_width = frames[0].shape[:2]
 
-    # Add padding BELOW the bottom-most detected text to catch shadows/glows/effects
-    expand_bottom = 60
+    # Sample 8-12 frames from the provided frames (caller should provide first ~2 seconds)
+    num_frames_to_sample = min(12, len(frames))
+    sample_indices = list(range(min(num_frames_to_sample, len(frames))))
 
-    # CRITICAL: Start from absolute TOP (y=0) to cover text at ANY vertical position
-    # End at the LAST detected text pixel + bottom padding
-    final_y_start = 0
-    final_y_end = min(y_max + expand_bottom, frame_height)
-    final_height = final_y_end - final_y_start
+    # Get EasyOCR reader
+    reader = _get_easyocr_reader()
 
-    # Use full frame width to catch all horizontal text and edge effects
-    final_x_start = 0
-    final_width = frame_width
+    # Track maximum bottom_y across all frames
+    y_max = 0
+    boxes_detected = False
 
+    for frame_idx in sample_indices:
+        frame = frames[frame_idx]
+        # Convert BGR to RGB for EasyOCR
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Run detector (returns list of bounding boxes, text, confidence)
+        # We only need bounding boxes, so we'll just use the first element
+        try:
+            results = reader.detect(frame_rgb)
+            # results[0] contains list of bounding boxes: [[[x1,y1], [x2,y2], [x3,y3], [x4,y4]], ...]
+            if results and results[0]:
+                boxes_detected = True
+                for box in results[0]:
+                    # box is [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
+                    # Get all y-coordinates and find max (bottom edge)
+                    y_coords = [point[1] for point in box]
+                    bottom_y = max(y_coords)
+                    y_max = max(y_max, bottom_y)
+        except Exception as e:
+            print(f"[EasyOCR] Detection error on frame {frame_idx}: {e}")
+            continue
+
+    # Set mask_end based on detection results
+    if boxes_detected:
+        # Add padding below detected text (80-140px as suggested)
+        padding = 120
+        mask_end = min(frame_height, int(y_max + padding))
+        print(f"[EasyOCR] Detected text bottom at y={int(y_max)}, mask_end={mask_end}px")
+    else:
+        # Fallback: cover 30% from top
+        mask_end = int(frame_height * 0.30)
+        print(f"[EasyOCR] No text detected, using fallback mask_end={mask_end}px (30% of {frame_height}px)")
+
+    # Debug render - save first frame with visible mask line
+    if debug_output_path and len(frames) > 0:
+        debug_frame = frames[0].copy()
+        # Draw bright green line at mask_end
+        cv2.line(debug_frame, (0, mask_end), (frame_width, mask_end), (0, 255, 0), 3)
+        # Draw text showing coverage
+        coverage_pct = (mask_end / frame_height) * 100
+        status = "Detected" if boxes_detected else "Fallback"
+        cv2.putText(debug_frame, f"{status}: {mask_end}px ({coverage_pct:.1f}%)",
+                    (10, mask_end - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.imwrite(debug_output_path, debug_frame)
+        print(f"[DEBUG] Saved debug frame to: {debug_output_path}")
+
+    # Return full-width box from top to mask_end
     return (
-        final_x_start,
-        final_y_start,
-        final_width,
-        final_height
+        0,           # x: start at left edge
+        0,           # y: start at top
+        frame_width, # w: full width
+        mask_end     # h: detected end point
     )
 
 

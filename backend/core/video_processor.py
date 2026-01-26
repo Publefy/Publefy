@@ -9,75 +9,122 @@ from dotenv import load_dotenv
 load_dotenv()
 pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD")
 
+# Initialize EasyOCR detector (lazy load)
+_EASYOCR_READER = None
 
-def detect_text_area(frames, num_frames=10):
+def _get_easyocr_reader():
+    """Lazy load EasyOCR reader instance for detection."""
+    global _EASYOCR_READER
+    if _EASYOCR_READER is None:
+        import easyocr
+        # Initialize with English language, GPU can be enabled if available
+        _EASYOCR_READER = easyocr.Reader(['en'], gpu=False, verbose=False)
+    return _EASYOCR_READER
+
+
+def detect_text_area(frames, num_frames=10, debug_output_path=None):
     """
-    DYNAMIC text detection that finds the LAST pixel where text appears.
-    Returns a box that covers from TOP of frame (y=0) to the bottom-most text pixel + padding.
+    EasyOCR detector approach for reliable text area detection.
+
+    1. Uses EasyOCR on 8-12 sampled frames (first ~2 seconds)
+    2. Computes y_max = max(bottom_y of all detected boxes across frames)
+    3. Sets mask once: mask_end = min(H, y_max + 120)
+    4. Returns (x, y, w, h) for mask area
+    5. If no boxes detected: fallback mask_end = int(H * 0.30) and log it
+
+    Returns (x, y, w, h) for mask area.
     """
     if not frames:
         return None
 
-    x_min, y_min, x_max, y_max = np.inf, np.inf, 0, 0
-    has_text = False
-
-    # Process only the first frame instead of multiple frames
-    gray = cv2.cvtColor(frames[0], cv2.COLOR_BGR2GRAY)
-    d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
-    for j in range(len(d["text"])):
-        try:
-            # Lower confidence threshold to catch more text including faint/styled text
-            if int(float(d["conf"][j])) > 15 and d["text"][j].strip():
-                has_text = True
-                x, y, w, h = (
-                    d["left"][j],
-                    d["top"][j],
-                    d["width"][j],
-                    d["height"][j],
-                )
-                x_min, y_min = min(x_min, x), min(y_min, y)
-                # y_max tracks the BOTTOM-MOST pixel of text
-                x_max, y_max = max(x_max, x + w), max(y_max, y + h)
-        except ValueError:
-            continue
-
-    if not has_text:
-        return None
-
     frame_height, frame_width = frames[0].shape[:2]
 
-    # Horizontal: add padding on sides
-    expand_horizontal = 30
+    # Sample 8-12 frames from the provided frames (caller should provide first ~2 seconds)
+    num_frames_to_sample = min(12, len(frames))
+    sample_indices = list(range(min(num_frames_to_sample, len(frames))))
 
-    # Vertical: CRITICAL - add padding BELOW the bottom-most text to catch effects
-    expand_bottom = 50
+    # Get EasyOCR reader
+    reader = _get_easyocr_reader()
 
-    # ALWAYS start from TOP of frame (y=0) to ensure we cover ALL text regardless of position
-    # End at the LAST pixel of detected text + bottom padding
-    final_y_start = 0
-    final_y_end = min(y_max + expand_bottom, frame_height)
-    final_height = final_y_end - final_y_start
+    # Track maximum bottom_y across all frames
+    y_max = 0
+    boxes_detected = False
 
-    # Horizontal: use full width to catch edge text
-    final_x_start = 0
-    final_width = frame_width
+    for frame_idx in sample_indices:
+        frame = frames[frame_idx]
+        # Convert BGR to RGB for EasyOCR
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
+        # Run detector (returns list of bounding boxes, text, confidence)
+        # We only need bounding boxes, so we'll just use the first element
+        try:
+            results = reader.detect(frame_rgb)
+            # results[0] contains list of bounding boxes: [[[x1,y1], [x2,y2], [x3,y3], [x4,y4]], ...]
+            if results and results[0]:
+                boxes_detected = True
+                for box in results[0]:
+                    # box is [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
+                    # Get all y-coordinates and find max (bottom edge)
+                    y_coords = [point[1] for point in box]
+                    bottom_y = max(y_coords)
+                    y_max = max(y_max, bottom_y)
+        except Exception as e:
+            print(f"[EasyOCR] Detection error on frame {frame_idx}: {e}")
+            continue
+
+    # Set mask_end based on detection results
+    if boxes_detected:
+        # Add padding below detected text (80-140px as suggested)
+        padding = 120
+        mask_end = min(frame_height, int(y_max + padding))
+        print(f"[EasyOCR] Detected text bottom at y={int(y_max)}, mask_end={mask_end}px")
+    else:
+        # Fallback: cover 30% from top
+        mask_end = int(frame_height * 0.30)
+        print(f"[EasyOCR] No text detected, using fallback mask_end={mask_end}px (30% of {frame_height}px)")
+
+    # Debug render - save first frame with visible mask line
+    if debug_output_path and len(frames) > 0:
+        debug_frame = frames[0].copy()
+        # Draw bright green line at mask_end
+        cv2.line(debug_frame, (0, mask_end), (frame_width, mask_end), (0, 255, 0), 3)
+        # Draw text showing coverage
+        coverage_pct = (mask_end / frame_height) * 100
+        status = "Detected" if boxes_detected else "Fallback"
+        cv2.putText(debug_frame, f"{status}: {mask_end}px ({coverage_pct:.1f}%)",
+                    (10, mask_end - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.imwrite(debug_output_path, debug_frame)
+        print(f"[DEBUG] Saved debug frame to: {debug_output_path}")
+
+    # Return full-width box from top to mask_end
     return (
-        final_x_start,
-        final_y_start,
-        final_width,
-        final_height
+        0,           # x: start at left edge
+        0,           # y: start at top
+        frame_width, # w: full width
+        mask_end     # h: detected end point
     )
 
 
 def get_background_color(frame, x, y, w, h):
-    margin = 15
-    samples = [
-        frame[max(0, y - margin) : y, x : x + w],
-        frame[y + h : min(frame.shape[0], y + h + margin), x : x + w],
-        frame[y : y + h, max(0, x - margin) : x],
-        frame[y : y + h, x + w : min(frame.shape[1], x + w + margin)],
-    ]
+    """Sample background color from BELOW the text area (not above)."""
+    # Sample from area just below the masked region
+    sample_y_start = y + h + 5  # Start 5px below mask
+    sample_y_end = min(frame.shape[0], sample_y_start + 30)  # Sample 30px strip
+
+    # If we're too close to bottom, sample from sides instead
+    if sample_y_end >= frame.shape[0] - 10:
+        margin = 15
+        samples = [
+            frame[y : y + h, max(0, x - margin) : x],
+            frame[y : y + h, x + w : min(frame.shape[1], x + w + margin)],
+        ]
+    else:
+        # Sample from below the text area
+        samples = [
+            frame[sample_y_start:sample_y_end, x : x + w],
+        ]
+
     pixels = np.vstack([s.reshape(-1, 3) for s in samples if s.size > 0])
     return tuple(map(int, np.mean(pixels, axis=0))) if len(pixels) else (128, 128, 128)
 
@@ -256,17 +303,30 @@ def overlay_text_on_frame(
 
 
 def process_video(input_path, output_path):
+    # FIX 1: VideoFileClip handles rotation metadata automatically
+    # Frames are already normalized to final render orientation
     clip = VideoFileClip(input_path)
     fps = clip.fps
 
-    # Only extract first frame for text detection since positioning is static
+    # FIX 2: Extract up to 10 frames from first 2 seconds (not just first frame)
+    # This catches captions that fade in after the video starts
     frames = []
-    for i, f in enumerate(clip.iter_frames()):
-        if i >= 1:  # Only need first frame now
-            break
-        frames.append(cv2.cvtColor(f, cv2.COLOR_RGB2BGR))
+    max_frames_for_detection = 10
+    frames_in_2_seconds = int(fps * 2)  # ~48-60 frames for typical videos
+    sample_every = max(1, frames_in_2_seconds // max_frames_for_detection)
 
-    text_area = detect_text_area(frames)
+    for i, f in enumerate(clip.iter_frames()):
+        if len(frames) >= max_frames_for_detection:
+            break
+        if i % sample_every == 0:  # Sample evenly
+            # FIX 1: Frames from VideoFileClip are already in final orientation
+            frames.append(cv2.cvtColor(f, cv2.COLOR_RGB2BGR))
+
+    # FIX 5: Generate debug frame
+    import tempfile
+    debug_path = os.path.join(tempfile.gettempdir(), "text_detection_debug.png")
+    text_area = detect_text_area(frames, debug_output_path=debug_path)
+
     if not text_area:
         clip.reader.close()
         clip.close()

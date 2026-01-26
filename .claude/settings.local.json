@@ -7,7 +7,8 @@
       "Bash(timeout 5 tail:*)",
       "Bash(venvScriptspython.exe:*)",
       "Bash(./venv/Scripts/python.exe:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(python -m pip install:*)"
     ]
   }
 }

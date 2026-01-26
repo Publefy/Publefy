@@ -407,6 +407,7 @@ export function VideoProcessorModal({
   // Meme Bank
   const [memeNiche, setMemeNiche] = useState("");
   const [memeCount, setMemeCount] = useState(5); // Slider value: 1-10
+  const [memeIntensity, setMemeIntensity] = useState(5); // Slider value: 1-10
   const [generatedMemes, setGeneratedMemes] = useState<MemeBankItem[]>([]);
   const [selectedMemes, setSelectedMemes] = useState<Set<string>>(new Set());
   const [isGeneratingMemes, setIsGeneratingMemes] = useState(false);
@@ -918,6 +919,7 @@ export function VideoProcessorModal({
       keyword: "",
       niche: "",
       count: memeCount,
+      intensity: memeIntensity,
       allowRepeats,
       onePromptForAll,
       profileId: profile?.id || undefined,
@@ -1365,12 +1367,12 @@ export function VideoProcessorModal({
             }
             @media (min-width: 640px) {
               .meme-results-grid {
-                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
               }
             }
             @media (max-width: 639px) {
               .meme-results-grid {
-                grid-template-columns: repeat(3, minmax(100px, 1fr)) !important;
+                grid-template-columns: repeat(2, minmax(100px, 1fr)) !important;
               }
             }
             /* Hide broken image icons */
@@ -1425,25 +1427,52 @@ export function VideoProcessorModal({
                 </div>
               </div>
 
-              {/* Meme Count Slider */}
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="meme-count" className="text-xs sm:text-sm font-medium text-gray-700">
-                    Number of Memes
-                  </Label>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                    {memeCount}
-                  </span>
+              {/* Meme Count and Intensity Sliders - Side by Side */}
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Meme Count Slider */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="meme-count" className="text-xs sm:text-sm font-medium text-gray-700">
+                      Number of Memes
+                    </Label>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                      {memeCount}
+                    </span>
+                  </div>
+                  <Slider
+                    id="meme-count"
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={[memeCount]}
+                    onValueChange={(value) => setMemeCount(value[0])}
+                    className="w-full"
+                  />
                 </div>
-                <Slider
-                  id="meme-count"
-                  min={1}
-                  max={10}
-                  step={1}
-                  value={[memeCount]}
-                  onValueChange={(value) => setMemeCount(value[0])}
-                  className="w-full"
-                />
+
+                {/* Intensity Slider */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="meme-intensity" className="text-xs sm:text-sm font-medium text-gray-700">
+                      Meme Intensity
+                    </Label>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                      {memeIntensity}
+                    </span>
+                  </div>
+                  <Slider
+                    id="meme-intensity"
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={[memeIntensity]}
+                    onValueChange={(value) => setMemeIntensity(value[0])}
+                    className="w-full"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {memeIntensity <= 3 ? "Kid-friendly" : memeIntensity <= 6 ? "Moderate" : memeIntensity <= 8 ? "Edgy" : "WTF Level"}
+                  </div>
+                </div>
               </div>
 
               {isGeneratingMemes && (
@@ -1559,7 +1588,7 @@ export function VideoProcessorModal({
                               title={`${selectedMemes.has(meme.id) ? "Deselect" : "Select"} meme`}
                             >
                               <div className="relative w-full" style={{ aspectRatio: "9/16" }}>
-                                <div className="absolute inset-0 flex items-center justify-center p-1 bg-black">
+                                <div className="absolute inset-0 flex items-center justify-center p-0 bg-black">
                                   <AuthMediaThumb
                                     full={meme.assets?.full}
                                     thumb={meme.assets?.thumb}

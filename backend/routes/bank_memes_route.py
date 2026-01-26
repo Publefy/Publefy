@@ -350,7 +350,7 @@ def _summarize_video_local(video_path: str) -> tuple[str, str]:
     video = re.search(r"(Video:|Content:)\s*(.*?)\n\s*Audio:", out, re.DOTALL)
     return (video.group(2).strip() if video else "")[:600], (audio.group(1).strip() if audio else "")[:600]
 
-def _gemini_options_for(video_summary: str, audio_summary: str, industry: str) -> list[str]:
+def _gemini_options_for(video_summary: str, audio_summary: str, industry: str, intensity: int = 5) -> list[str]:
     """Return EXACTLY 20 short, funny, relatable one-liners (<=20 words)."""
     from core.gemini_funny_comment_generator import generate_meme_captions
     # Pass the keyword (industry param is actually the prompt_hint/keyword from user)
@@ -359,7 +359,8 @@ def _gemini_options_for(video_summary: str, audio_summary: str, industry: str) -
         audio_summary=audio_summary,
         num_options=20,
         temperature=0.35,
-        keyword=industry or ""  # This is actually the user's keyword/prompt
+        keyword=industry or "",  # This is actually the user's keyword/prompt
+        intensity=intensity
     )
 
 def _score_prompt(opt: str, industry: str) -> float:
@@ -1163,6 +1164,7 @@ def generate_memes_from_bank():
 
     count = max(1, int(body.get("count") or 10))
     allow_repeats = bool(body.get("allowRepeats", False))
+    intensity = max(1, min(10, int(body.get("intensity") or 5)))  # Clamp to 1-10, default 5
 
     # user + profile
     user = getattr(g, "current_user", None)
@@ -1276,7 +1278,7 @@ def generate_memes_from_bank():
 
             # 20 options from Gemini
             try:
-                opts = _gemini_options_for(video_summary, audio_summary, prompt_hint or "")
+                opts = _gemini_options_for(video_summary, audio_summary, prompt_hint or "", intensity)
             except Exception as e:
                 sentry_sdk.capture_exception(e)
                 prompt_source = "fallback"

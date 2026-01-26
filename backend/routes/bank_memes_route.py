@@ -27,6 +27,7 @@ from email.utils import formatdate
 import tempfile
 import subprocess
 import shlex
+import pytesseract
 # Gemini SDK (same style as analyze_route.py)
 from google import genai
 from google.genai import types
@@ -236,8 +237,70 @@ def _overlay_text_on_frame(
 def _get_top_overlay_area(frame, percent_min=0.20, percent_max=0.25):
     h, w, _ = frame.shape
     y0 = 0
-    y1 = int(h * percent_max) 
+    y1 = int(h * percent_max)
     return (0, y0, w, y1 - y0)
+
+
+def _detect_text_area(frame):
+    """Detect text area using OCR on a single frame, returns (x, y, w, h) or None.
+
+    Returns FULL WIDTH overlay (x=0, w=frame_width) starting from TOP (y=0).
+    Only considers text in the TOP 50% of the frame and limits max height to 40%.
+    Also detects bright (white) backgrounds that might extend below the text.
+    """
+    try:
+        frame_height, frame_width = frame.shape[:2]
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
+
+        # Only consider text in top 50% of frame
+        max_y_threshold = frame_height * 0.5
+        y_max = 0
+        has_text = False
+
+        for j in range(len(d["text"])):
+            try:
+                if int(float(d["conf"][j])) > 30 and d["text"][j].strip():
+                    y, h = d["top"][j], d["height"][j]
+                    # Skip text that's in the bottom half of the frame
+                    if y > max_y_threshold:
+                        continue
+                    has_text = True
+                    y_max = max(y_max, y + h)
+            except ValueError:
+                continue
+
+        if not has_text:
+            return None
+
+        # Extend down to cover any bright background below the text
+        text_bottom = int(y_max)
+        expand_bottom = 30  # Base expansion
+
+        # Check for bright rows below text (white/light backgrounds)
+        scan_limit = min(text_bottom + 100, int(frame_height * 0.5))
+        for row_y in range(text_bottom, scan_limit):
+            row_brightness = np.mean(gray[row_y, :])
+            if row_brightness > 200:  # Bright row (likely white background)
+                expand_bottom = row_y - text_bottom + 20
+            elif row_brightness < 150:  # Dark row - stop expanding
+                break
+
+        detected_bottom = text_bottom + expand_bottom
+
+        # Limit max height to 40% of frame to avoid covering too much content
+        max_height = int(frame_height * 0.40)
+        overlay_height = min(detected_bottom, max_height)
+
+        return (
+            0,  # Always start at x=0 (full width)
+            0,  # Always start from TOP (y=0)
+            frame_width,  # Always full frame width
+            overlay_height,  # Height from top down to text bottom
+        )
+    except Exception:
+        return None
+
 
 def _make_thumbnail_from_video_path(video_path: str, out_path: str, at_seconds: float = 0.5):
     clip = VideoFileClip(video_path)
@@ -270,7 +333,14 @@ def _render_with_caption(src_path: str, caption: str) -> tuple[str, tuple]:
     clip_for_overlay.reader.close()
     clip_for_overlay.close()
 
-    x, y, w, h = _get_top_overlay_area(first_frame, percent_min=0.20, percent_max=0.25)
+    # Try OCR detection first, fallback to default area (25% from top)
+    bgr_frame = cv2.cvtColor(first_frame, cv2.COLOR_RGB2BGR)
+    detected = _detect_text_area(bgr_frame)
+    if detected:
+        x, y, w, h = detected
+    else:
+        x, y, w, h = _get_top_overlay_area(first_frame, percent_min=0.20, percent_max=0.25)
+
     background_color = (0, 0, 0)
     text_color = (255, 255, 255)
     text_area = (x, y, w, h)

@@ -57,7 +57,7 @@ pydantic_core==2.27.2
 pymongo==4.11.3
 pyparsing==3.2.3
 pytesseract==0.3.13
-easyocr==1.7.2
+# easyocr==1.7.2  # Optional - install separately if needed (adds ~3GB to build, slows build 4x)
 python-dotenv==1.1.0
 python-jose==3.4.0
 python-multipart==0.0.20

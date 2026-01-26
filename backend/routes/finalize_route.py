@@ -20,17 +20,22 @@ import sentry_sdk
 
 finalize_blueprint = Blueprint("finalize_direct", __name__, url_prefix="/video")
 
-# Initialize EasyOCR detector (lazy load)
+# Initialize EasyOCR detector (lazy load, optional)
 _EASYOCR_READER = None
+_EASYOCR_AVAILABLE = None
 
 def _get_easyocr_reader():
-    """Lazy load EasyOCR reader instance for detection."""
-    global _EASYOCR_READER
-    if _EASYOCR_READER is None:
-        import easyocr
-        # Initialize with English language, GPU can be enabled if available
-        _EASYOCR_READER = easyocr.Reader(['en'], gpu=False, verbose=False)
-    return _EASYOCR_READER
+    """Lazy load EasyOCR reader instance for detection. Returns None if not available."""
+    global _EASYOCR_READER, _EASYOCR_AVAILABLE
+    if _EASYOCR_AVAILABLE is None:
+        try:
+            import easyocr
+            _EASYOCR_READER = easyocr.Reader(['en'], gpu=False, verbose=False)
+            _EASYOCR_AVAILABLE = True
+        except ImportError:
+            _EASYOCR_AVAILABLE = False
+            print("[INFO] EasyOCR not available, falling back to pytesseract")
+    return _EASYOCR_READER if _EASYOCR_AVAILABLE else None
 
 # --- helpers -----------------------------------------------------------------
 
@@ -542,64 +547,95 @@ def process_video(input_path, output_path):
 
 def detect_text_area(frames, num_frames=10, debug_output_path=None):
     """
-    EasyOCR detector approach for reliable text area detection.
-
-    1. Uses EasyOCR on 8-12 sampled frames (first ~2 seconds)
-    2. Computes y_max = max(bottom_y of all detected boxes across frames)
-    3. Sets mask once: mask_end = min(H, y_max + 120)
-    4. Returns (x, y, w, h) for mask area
-    5. If no boxes detected: fallback mask_end = int(H * 0.30) and log it
-
+    Text detector with EasyOCR (if available) or pytesseract fallback.
     Returns (x, y, w, h) for mask area.
     """
     if not frames:
         return None
 
     frame_height, frame_width = frames[0].shape[:2]
+    boxes_detected = False  # Track if text was detected (for debug output)
 
-    # Sample 8-12 frames from the provided frames (caller should provide first ~2 seconds)
-    num_frames_to_sample = min(12, len(frames))
-    sample_indices = list(range(min(num_frames_to_sample, len(frames))))
-
-    # Get EasyOCR reader
+    # Try EasyOCR first if available
     reader = _get_easyocr_reader()
+    if reader is not None:
+        # Use EasyOCR detection
+        num_frames_to_sample = min(12, len(frames))
+        sample_indices = list(range(min(num_frames_to_sample, len(frames))))
+        y_max = 0
+        boxes_detected = False
 
-    # Track maximum bottom_y across all frames
-    y_max = 0
-    boxes_detected = False
+        for frame_idx in sample_indices:
+            frame = frames[frame_idx]
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            try:
+                results = reader.detect(frame_rgb)
+                if results and results[0]:
+                    boxes_detected = True
+                    for box in results[0]:
+                        y_coords = [point[1] for point in box]
+                        bottom_y = max(y_coords)
+                        y_max = max(y_max, bottom_y)
+            except Exception as e:
+                print(f"[EasyOCR] Detection error on frame {frame_idx}: {e}")
+                continue
 
-    for frame_idx in sample_indices:
-        frame = frames[frame_idx]
-        # Convert BGR to RGB for EasyOCR
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Run detector (returns list of bounding boxes, text, confidence)
-        # We only need bounding boxes, so we'll just use the first element
-        try:
-            results = reader.detect(frame_rgb)
-            # results[0] contains list of bounding boxes: [[[x1,y1], [x2,y2], [x3,y3], [x4,y4]], ...]
-            if results and results[0]:
-                boxes_detected = True
-                for box in results[0]:
-                    # box is [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
-                    # Get all y-coordinates and find max (bottom edge)
-                    y_coords = [point[1] for point in box]
-                    bottom_y = max(y_coords)
-                    y_max = max(y_max, bottom_y)
-        except Exception as e:
-            print(f"[EasyOCR] Detection error on frame {frame_idx}: {e}")
-            continue
-
-    # Set mask_end based on detection results
-    if boxes_detected:
-        # Add padding below detected text (80-140px as suggested)
-        padding = 120
-        mask_end = min(frame_height, int(y_max + padding))
-        print(f"[EasyOCR] Detected text bottom at y={int(y_max)}, mask_end={mask_end}px")
+        if boxes_detected:
+            padding = 120
+            mask_end = min(frame_height, int(y_max + padding))
+            print(f"[EasyOCR] Detected text bottom at y={int(y_max)}, mask_end={mask_end}px")
+        else:
+            mask_end = int(frame_height * 0.30)
+            print(f"[EasyOCR] No text detected, using fallback mask_end={mask_end}px")
     else:
-        # Fallback: cover 30% from top
-        mask_end = int(frame_height * 0.30)
-        print(f"[EasyOCR] No text detected, using fallback mask_end={mask_end}px (30% of {frame_height}px)")
+        # Fallback to pytesseract-based detection
+        sample_indices = np.linspace(0, len(frames) - 1, min(num_frames, len(frames)), dtype=int)
+        y_max_ocr = 0
+        ocr_detected_count = 0
+
+        for idx in sample_indices:
+            gray = cv2.cvtColor(frames[int(idx)], cv2.COLOR_BGR2GRAY)
+            d = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
+            for j in range(len(d["text"])):
+                try:
+                    if int(float(d["conf"][j])) > 10 and d["text"][j].strip():
+                        x, y, w, h = d["left"][j], d["top"][j], d["width"][j], d["height"][j]
+                        y_max_ocr = max(y_max_ocr, y + h)
+                        ocr_detected_count += 1
+                except ValueError:
+                    continue
+
+        # Edge detection fallback
+        y_max_edges = 0
+        bottom_half_start = int(frame_height * 0.4)
+        gray = cv2.cvtColor(frames[0], cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        row_density = []
+        for y in range(bottom_half_start, frame_height):
+            density = np.sum(edges[y, :]) / frame_width
+            row_density.append((y, density))
+        if row_density:
+            row_density.sort(key=lambda x: x[1], reverse=True)
+            top_rows = row_density[:max(1, len(row_density) // 10)]
+            if top_rows and top_rows[0][1] > 10:
+                for y, density in top_rows:
+                    if density > 10:
+                        y_max_edges = max(y_max_edges, y)
+
+        y_max_detected = max(y_max_ocr, y_max_edges)
+        expand_bottom = 100
+        weak_detection_threshold = 5
+        minimum_safe_coverage = int(frame_height * 0.80)
+
+        if ocr_detected_count < weak_detection_threshold or y_max_detected == 0:
+            mask_end = minimum_safe_coverage
+        else:
+            ocr_coverage = y_max_detected + expand_bottom
+            mask_end = max(ocr_coverage, minimum_safe_coverage)
+        
+        mask_end = min(mask_end, frame_height)
+        boxes_detected = ocr_detected_count >= weak_detection_threshold
+        print(f"[pytesseract] Detected text bottom at y={int(y_max_detected)}, mask_end={mask_end}px")
 
     # Debug render - save first frame with visible mask line
     if debug_output_path and len(frames) > 0:

@@ -89,6 +89,88 @@ def _gemini_client(project: str = GEMINI_PROJECT, location: str = GEMINI_LOCATIO
     )
 
 # ---------------- helpers ----------------
+_USER_LOGO_CACHE = {}
+
+def _load_user_logo_from_gcs(user_id: str):
+    """Load user's custom logo from GCS. Returns BGRA numpy array or None."""
+    if user_id in _USER_LOGO_CACHE:
+        return _USER_LOGO_CACHE[user_id]
+
+    try:
+        user = db.users.find_one({"_id": ObjectId(user_id)}, {"logo_url": 1})
+        logo_blob_name = (user or {}).get("logo_url")
+        if not logo_blob_name:
+            _USER_LOGO_CACHE[user_id] = None
+            return None
+
+        from core.data.video_service import download_video_from_gcloud
+        logo_bytes = download_video_from_gcloud(logo_blob_name)
+        if not logo_bytes:
+            _USER_LOGO_CACHE[user_id] = None
+            return None
+
+        logo = cv2.imdecode(np.frombuffer(logo_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
+        if logo is None:
+            _USER_LOGO_CACHE[user_id] = None
+            return None
+
+        # Convert to BGRA if needed
+        if len(logo.shape) == 2:
+            logo = cv2.cvtColor(logo, cv2.COLOR_GRAY2BGRA)
+        elif logo.shape[2] == 3:
+            logo = cv2.cvtColor(logo, cv2.COLOR_BGR2BGRA)
+
+        _USER_LOGO_CACHE[user_id] = logo
+        return logo
+    except Exception as e:
+        print(f"[WARN] Failed to load user logo for {user_id}: {e}")
+        _USER_LOGO_CACHE[user_id] = None
+        return None
+
+
+def _add_user_logo_watermark(frame, logo_img, opacity=0.5, padding=25):
+    """
+    Overlay user's custom logo at top-center of the frame with given opacity.
+    logo_img: BGRA numpy array (pre-loaded).
+    """
+    if logo_img is None:
+        return frame
+
+    frame_h, frame_w = frame.shape[:2]
+    target_h = max(20, int(frame_h * 0.05))
+
+    # Resize maintaining aspect ratio
+    logo_h, logo_w = logo_img.shape[:2]
+    scale = target_h / logo_h
+    new_w = int(logo_w * scale)
+    resized = cv2.resize(logo_img, (new_w, target_h), interpolation=cv2.INTER_AREA)
+
+    # Position: top center
+    y1 = padding
+    y2 = y1 + target_h
+    x1 = (frame_w - new_w) // 2
+    x2 = x1 + new_w
+
+    # Bounds check
+    if y2 > frame_h or x2 > frame_w or x1 < 0 or y1 < 0:
+        return frame
+
+    # Alpha blending
+    if resized.shape[2] == 4:
+        alpha = (resized[:, :, 3] / 255.0) * opacity
+        for c in range(3):
+            frame[y1:y2, x1:x2, c] = (
+                alpha * resized[:, :, c] + (1 - alpha) * frame[y1:y2, x1:x2, c]
+            )
+    else:
+        for c in range(3):
+            frame[y1:y2, x1:x2, c] = (
+                opacity * resized[:, :, c] + (1 - opacity) * frame[y1:y2, x1:x2, c]
+            ).astype(np.uint8)
+
+    return frame
+
+
 _WATERMARK_LOGO_CACHE = {}
 
 def _load_watermark_logo(target_height=30):
@@ -323,7 +405,7 @@ def _download_blob_to_temp(bucket, client, blob_name: str, suffix: str = ".mp4")
         sentry_sdk.capture_exception(e)
         return None
 
-def _render_with_caption(src_path: str, caption: str) -> tuple[str, tuple]:
+def _render_with_caption(src_path: str, caption: str, user_logo_img=None) -> tuple[str, tuple]:
     """
     Returns (final_video_path, text_area)
     """
@@ -359,6 +441,8 @@ def _render_with_caption(src_path: str, caption: str) -> tuple[str, tuple]:
         bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         cv2.rectangle(bgr, (x, y), (x + w, y + h), background_color, -1)
         overlayed = _overlay_text_on_frame(bgr, caption, text_area, color=text_color)
+        if user_logo_img is not None:
+            overlayed = _add_user_logo_watermark(overlayed, user_logo_img, opacity=0.5)
         overlayed = _add_copyright_watermark(overlayed)
         writer.write(overlayed)
 
@@ -815,6 +899,8 @@ def _sanitize_blob_path(blob_name: str, base_prefix: str) -> bool:
     if blob_name.startswith("processed_videos/") and "/thumbs/" in blob_name:
         return True
     if blob_name.startswith("users/"):
+        return True
+    if blob_name.startswith("user_logos/"):
         return True
     if blob_name.startswith("instagram_reels/"):
         return True
@@ -1297,6 +1383,9 @@ def generate_memes_from_bank():
     watermark = _should_watermark(user_id)
     used = set()  # meme_usage tracking disabled
 
+    # Load user logo once for watermarking
+    user_logo_img = _load_user_logo_from_gcs(user_id)
+
     # collect ALL bank videos (flat random)
     blobs = list(bucket.list_blobs(prefix=base_prefix))
     blobs = [b for b in blobs if not b.name.endswith("/") and _is_video(b.name, b.content_type)]
@@ -1359,7 +1448,7 @@ def generate_memes_from_bank():
 
             # render overlay
             try:
-                local_final, text_area = _render_with_caption(local_src, chosen)
+                local_final, text_area = _render_with_caption(local_src, chosen, user_logo_img=user_logo_img)
                 temp_paths.append(local_final)
             except Exception as e:
                 sentry_sdk.capture_exception(e)

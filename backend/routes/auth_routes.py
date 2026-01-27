@@ -803,5 +803,100 @@ def get_me():
         "name": user.get("name"),
         "email": user.get("email"),
         "subscription": user.get("subscription", {"plan": "free", "status": "active"}),
-        "usage": user.get("usage", {"points_balance": 0, "points_total_limit": 0, "points_used": 0})
+        "usage": user.get("usage", {"points_balance": 0, "points_total_limit": 0, "points_used": 0}),
+        "logo_url": user.get("logo_url"),
     })
+
+
+@auth_blueprint.route("/upload-logo", methods=["POST"])
+@login_required
+def upload_logo():
+    """
+    Upload a custom logo watermark for the user.
+    Accepts multipart form with 'logo' file (image/png, image/jpeg, max 2MB).
+    """
+    from bson import ObjectId as _ObjId
+    from core.data.video_service import upload_video_to_gcloud
+    import tempfile as _tmpmod
+
+    user_id = str(g.current_user["_id"])
+
+    if "logo" not in request.files:
+        return jsonify({"error": "Missing 'logo' file"}), 400
+
+    logo_file = request.files["logo"]
+    if not logo_file.filename:
+        return jsonify({"error": "Empty filename"}), 400
+
+    # Validate content type
+    allowed_types = {"image/png", "image/jpeg", "image/jpg"}
+    if logo_file.content_type not in allowed_types:
+        return jsonify({"error": "Only PNG and JPEG images are allowed"}), 400
+
+    # Read and check size (max 2MB)
+    data = logo_file.read()
+    if len(data) > 2 * 1024 * 1024:
+        return jsonify({"error": "File too large. Maximum size is 2MB"}), 400
+
+    # Determine extension
+    ext = ".png" if logo_file.content_type == "image/png" else ".jpg"
+    blob_name = f"user_logos/{user_id}{ext}"
+
+    # Write to temp file and upload
+    tmp = _tmpmod.NamedTemporaryFile(delete=False, suffix=ext)
+    try:
+        tmp.write(data)
+        tmp.close()
+        ok = upload_video_to_gcloud(tmp.name, blob_name)
+        if not ok:
+            return jsonify({"error": "Failed to upload logo to storage"}), 500
+    finally:
+        try:
+            os.remove(tmp.name)
+        except Exception:
+            pass
+
+    # Update user document
+    db.users.update_one(
+        {"_id": _ObjId(user_id)},
+        {"$set": {"logo_url": blob_name}}
+    )
+
+    return jsonify({"logo_url": blob_name})
+
+
+@auth_blueprint.route("/delete-logo", methods=["DELETE"])
+@login_required
+def delete_logo():
+    """
+    Delete the user's custom logo watermark.
+    """
+    from bson import ObjectId as _ObjId
+    from core.data.gcloud_repo import GCloudRepository
+
+    user_id = str(g.current_user["_id"])
+    user = g.current_user
+    logo_url = user.get("logo_url")
+
+    # Remove from DB
+    db.users.update_one(
+        {"_id": _ObjId(user_id)},
+        {"$unset": {"logo_url": ""}}
+    )
+
+    # Delete blob from GCS if it exists
+    if logo_url:
+        try:
+            bucket_name = os.getenv("VIDEO_BUCKET_NAME")
+            user_project = os.getenv("USER_PROJECT")
+            if bucket_name and user_project:
+                repo = GCloudRepository(bucket_name, user_project)
+                client = repo.get_client()
+                bucket = client.get_bucket(bucket_name)
+                blob = bucket.blob(logo_url)
+                if blob.exists(client):
+                    blob.delete(client=client)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+
+    return jsonify({"status": "ok"})

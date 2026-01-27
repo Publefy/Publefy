@@ -79,6 +79,10 @@ export const API_ENDPOINTS = {
     analyze: ensureLeadingSlash(process.env.NEXT_PUBLIC_API_VIDEO_ANALYZE || "/video/analyze"),
     finalize: ensureLeadingSlash(process.env.NEXT_PUBLIC_API_VIDEO_FINALIZE || "/video/finalize"),
   },
+  logo: {
+    upload: ensureLeadingSlash("/auth/upload-logo"),
+    delete: ensureLeadingSlash("/auth/delete-logo"),
+  },
 } as const;
 
 /**

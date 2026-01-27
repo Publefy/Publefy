@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/components/ui/use-toast";
-import { X, Zap, Calendar, Maximize2, Play, Check, Loader2, Dumbbell, UtensilsCrossed, Heart, TrendingUp } from "lucide-react";
+import { X, Zap, Calendar, Maximize2, Play, Check, Loader2, Dumbbell, UtensilsCrossed, Heart, TrendingUp, Upload, Trash2, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -483,6 +483,12 @@ export function VideoProcessorModal({
   const [insufficientPointsOpen, setInsufficientPointsOpen] = useState(false);
   const [pointsInfo, setPointsInfo] = useState<{ balance: number; required: number } | null>(null);
 
+  // Logo
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
   // toggles
   const [allowRepeats, setAllowRepeats] = useState(true);
   const [onePromptForAll, setOnePromptForAll] = useState(false);
@@ -514,7 +520,10 @@ export function VideoProcessorModal({
       setSelectedMemes(new Set());
       setMemeNiche("");
     }
-  }, [open, generatedMemes.length, profile, emitVideosUpdated]);
+    if (!open && logoPreview && logoPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreview);
+    }
+  }, [open, generatedMemes.length, profile, emitVideosUpdated, logoPreview]);
 
   const requireAuth = (actionLabel: string) => {
     const tok = getAuthToken();
@@ -620,6 +629,37 @@ export function VideoProcessorModal({
       if (sm) setSelectedMemeOption(sm);
     }
   }, [open, initialAnalysis]);
+
+  // Fetch user's logo on modal open
+  useEffect(() => {
+    if (!open) return;
+    const tok = getAuthToken();
+    if (!tok) return;
+    (async () => {
+      try {
+        const data = await apiServiceDefault.get<any>("/auth/me");
+        const url = data?.logo_url;
+        if (url) {
+          setLogoUrl(url);
+          // Build preview URL from the blob name
+          const previewUrl = normalizeApiUrl(`/memes/media/${encodeURIComponent(url)}`);
+          if (previewUrl) {
+            try {
+              const obj = await fetchAsObjectURL(previewUrl);
+              setLogoPreview(obj);
+            } catch {
+              setLogoPreview(previewUrl);
+            }
+          }
+        } else {
+          setLogoUrl(null);
+          setLogoPreview(null);
+        }
+      } catch {
+        // silently fail
+      }
+    })();
+  }, [open]);
 
   // Read serializable resume state to power UX banner after login
   useEffect(() => {
@@ -870,6 +910,66 @@ export function VideoProcessorModal({
 
   const isAnalyzeSuccessful = videoSummary.length > 0 && memeOptions.length > 0;
   const clampedFakeProgress = Math.min(100, Math.max(0, fakeProgress));
+
+  /* ---------- Logo upload/delete ---------- */
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!requireAuth("upload a logo")) return;
+
+    if (f.size > 2 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Logo must be under 2MB.", variant: "destructive" });
+      return;
+    }
+    if (!["image/png", "image/jpeg"].includes(f.type)) {
+      toast({ title: "Invalid format", description: "Only PNG and JPEG are allowed.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append("logo", f);
+      const raw = await apiServiceDefault.post<{ logo_url: string }>("/auth/upload-logo", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const data = unwrap<{ logo_url: string }>(raw);
+      setLogoUrl(data.logo_url);
+
+      // Create local preview
+      const localUrl = URL.createObjectURL(f);
+      setLogoPreview(localUrl);
+
+      toast({ title: "Logo uploaded", description: "Your logo will appear on generated videos." });
+    } catch (err: any) {
+      toast({
+        title: "Upload failed",
+        description: err?.response?.data?.error || err?.message || "Could not upload logo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+      // Reset file input
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    if (!requireAuth("remove your logo")) return;
+    try {
+      await apiServiceDefault.delete("/auth/delete-logo");
+      if (logoPreview && logoPreview.startsWith("blob:")) URL.revokeObjectURL(logoPreview);
+      setLogoUrl(null);
+      setLogoPreview(null);
+      toast({ title: "Logo removed" });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err?.response?.data?.error || err?.message || "Could not remove logo.",
+        variant: "destructive",
+      });
+    }
+  };
 
   /* ---------- Meme Bank: Auto-generate rendered memes (server overlays + DB) ---------- */
   const handleAutoGenerateRenderedMemes = async () => {
@@ -1390,6 +1490,70 @@ export function VideoProcessorModal({
           <div className="flex-1 flex flex-col">
             <div className="space-y-4 sm:space-y-5">
               <div ref={resultsRef} />
+
+              {/* Logo upload section */}
+              <div>
+                <Label className="text-xs sm:text-sm font-medium text-gray-700 mb-2 block">
+                  Your Logo
+                </Label>
+                <div className="flex items-center gap-3">
+                  {logoPreview ? (
+                    <div className="relative w-12 h-12 rounded-md border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+                      <img
+                        src={logoPreview}
+                        alt="Your logo"
+                        className="max-w-full max-h-full object-contain"
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-md border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center">
+                      <ImageIcon className="w-5 h-5 text-gray-400" />
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs border-gray-200"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={isUploadingLogo}
+                      >
+                        {isUploadingLogo ? (
+                          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                        ) : (
+                          <Upload className="w-3 h-3 mr-1.5" />
+                        )}
+                        {logoUrl ? "Change" : "Upload"}
+                      </Button>
+                      {logoUrl && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+                          onClick={handleLogoDelete}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-gray-400">PNG with transparent background, max 2MB</span>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="meme-niche" className="text-xs sm:text-sm font-medium text-gray-700 mb-2 block">
                   Topic

@@ -338,6 +338,9 @@ def finalize_video():
 
         shutil.copyfile(original_path, cleaned_path)
 
+        # Load user's custom logo for watermarking (once, before frame loop)
+        user_logo_img = _load_user_logo_from_gcs(user_id)
+
         try:
             clip = VideoFileClip(cleaned_path)
             fps = clip.fps
@@ -354,6 +357,8 @@ def finalize_video():
                 # Draw black rectangle from TOP to BOTTOM-MOST text pixel + padding
                 cv2.rectangle(bgr, (x, y), (x + w, y + h), background_color, -1)
                 overlayed = overlay_text_on_frame(bgr, caption, text_area, color=text_color)
+                if user_logo_img is not None:
+                    overlayed = add_user_logo_watermark(overlayed, user_logo_img, opacity=0.5)
                 overlayed = add_copyright_watermark(overlayed)
                 writer.write(overlayed)
 
@@ -680,6 +685,89 @@ def get_text_color_by_contrast(background_color):
     r, g, b = background_color
     luminance = 0.299 * r + 0.587 * g + 0.114 * b
     return (0, 0, 0) if luminance > 160 else (255, 255, 255)
+
+
+_USER_LOGO_CACHE = {}
+
+def _load_user_logo_from_gcs(user_id: str):
+    """Load user's custom logo from GCS. Returns BGRA numpy array or None."""
+    if user_id in _USER_LOGO_CACHE:
+        return _USER_LOGO_CACHE[user_id]
+
+    try:
+        user = db.users.find_one({"_id": ObjectId(user_id)}, {"logo_url": 1})
+        logo_blob_name = (user or {}).get("logo_url")
+        if not logo_blob_name:
+            _USER_LOGO_CACHE[user_id] = None
+            return None
+
+        from core.data.video_service import download_video_from_gcloud
+        logo_bytes = download_video_from_gcloud(logo_blob_name)
+        if not logo_bytes:
+            _USER_LOGO_CACHE[user_id] = None
+            return None
+
+        logo = cv2.imdecode(np.frombuffer(logo_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
+        if logo is None:
+            _USER_LOGO_CACHE[user_id] = None
+            return None
+
+        # Convert to BGRA if needed
+        if len(logo.shape) == 2:
+            logo = cv2.cvtColor(logo, cv2.COLOR_GRAY2BGRA)
+        elif logo.shape[2] == 3:
+            logo = cv2.cvtColor(logo, cv2.COLOR_BGR2BGRA)
+
+        _USER_LOGO_CACHE[user_id] = logo
+        return logo
+    except Exception as e:
+        print(f"[WARN] Failed to load user logo for {user_id}: {e}")
+        _USER_LOGO_CACHE[user_id] = None
+        return None
+
+
+def add_user_logo_watermark(frame, logo_img, opacity=0.5, padding=25):
+    """
+    Overlay user's custom logo at top-center of the frame with given opacity.
+    logo_img: BGRA numpy array (pre-loaded, will be resized to ~5% frame height).
+    """
+    if logo_img is None:
+        return frame
+
+    frame_h, frame_w = frame.shape[:2]
+    target_h = max(20, int(frame_h * 0.05))
+
+    # Resize maintaining aspect ratio
+    logo_h, logo_w = logo_img.shape[:2]
+    scale = target_h / logo_h
+    new_w = int(logo_w * scale)
+    resized = cv2.resize(logo_img, (new_w, target_h), interpolation=cv2.INTER_AREA)
+
+    # Position: top center
+    y1 = padding
+    y2 = y1 + target_h
+    x1 = (frame_w - new_w) // 2
+    x2 = x1 + new_w
+
+    # Bounds check
+    if y2 > frame_h or x2 > frame_w or x1 < 0 or y1 < 0:
+        return frame
+
+    # Alpha blending
+    if resized.shape[2] == 4:
+        alpha = (resized[:, :, 3] / 255.0) * opacity
+        for c in range(3):
+            frame[y1:y2, x1:x2, c] = (
+                alpha * resized[:, :, c] + (1 - alpha) * frame[y1:y2, x1:x2, c]
+            )
+    else:
+        # No alpha channel, use uniform opacity
+        for c in range(3):
+            frame[y1:y2, x1:x2, c] = (
+                opacity * resized[:, :, c] + (1 - opacity) * frame[y1:y2, x1:x2, c]
+            ).astype(np.uint8)
+
+    return frame
 
 
 _WATERMARK_LOGO_CACHE = {}

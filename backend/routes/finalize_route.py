@@ -959,12 +959,9 @@ def get_my_videos():
             "status": {"$ne": "draft"}
         }
         if ig_id:
-            query["ig_id"] = ig_id
+            # Show videos assigned to this account AND unassigned (shared) videos
+            query["$or"] = [{"ig_id": ig_id}, {"ig_id": None}, {"ig_id": {"$exists": False}}]
         else:
-            # Optionally, you might want to only show reels with NO ig_id
-            # or show ALL reels for the user.
-            # The frontend agent's description suggests they want unassigned reels
-            # when no account is selected.
             query["ig_id"] = None
         cursor = db.reels.find(query).sort("created_at", -1).limit(limit)
         videos = list(cursor)

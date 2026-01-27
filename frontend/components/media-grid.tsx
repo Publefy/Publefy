@@ -459,10 +459,10 @@ export function MediaGrid({ items, setItems, igId, onVideoSelect }: MediaGridPro
         return vi;
       });
 
-      // Strict Frontend Filtering:
-      // Prevent "Guest" videos from showing in "Account" views and vice versa.
+      // Shared library: when an account is selected, show both
+      // account-specific AND unassigned (shared) videos.
       if (igId) {
-        data = data.filter(v => (v as any).raw_ig_id === igId);
+        data = data.filter(v => (v as any).raw_ig_id === igId || !(v as any).raw_ig_id);
       } else {
         data = data.filter(v => !(v as any).raw_ig_id);
       }
@@ -501,10 +501,9 @@ export function MediaGrid({ items, setItems, igId, onVideoSelect }: MediaGridPro
   useEffect(() => {
     const onVideosUpdated = (e: Event) => {
       const { igId: changedIgId } = (e as CustomEvent).detail || {};
-      // Refresh if the update matches our current view (or if both are "guest")
-      if (!changedIgId && !igId) {
-        fetchMyVideos();
-      } else if (changedIgId === igId) {
+      // Refresh if the update matches our current view, or if the video
+      // was created without an account (shared) and we have an account selected
+      if (!changedIgId || !igId || changedIgId === igId) {
         fetchMyVideos();
       }
     };
